@@ -33,6 +33,8 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@types/marked": "^4.0.7",
+    "marked": "^4.1.1",
     "opml": "^0.4.24"
   },
   "eslintConfig": {
