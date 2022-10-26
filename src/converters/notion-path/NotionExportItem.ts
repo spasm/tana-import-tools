@@ -28,9 +28,12 @@ export class NotionExportItem {
         this.name = this.getItemName();
     }
 
+    // if it's a file, just return the id
+    // if it's a directory, suffix with '-d'
     private getNotionId(): string {
         const name = this.parsedPath!.name;
-        return name.substring(name.length - 32, name.length).trim();
+        const id = name.substring(name.length - 32, name.length).trim();
+        return this.itemType == ExportItemType.Directory ? id + '-d' : id;
     }
 
     private getItemName(): string {
@@ -57,5 +60,17 @@ export class NotionExportItem {
     public getContents(): string | undefined {
         if(this.fullPath)
             {return fs.readFileSync(this.fullPath, 'utf-8');}
+    }
+
+    public isMarkdownItem(): boolean {
+        return this.itemType === ExportItemType.Markdown;
+    }
+
+    public isDirectoryItem(): boolean {
+        return this.itemType === ExportItemType.Directory;
+    }
+
+    public isCsvItem(): boolean {
+        return this.itemType === ExportItemType.CSV;
     }
 }

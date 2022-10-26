@@ -1,4 +1,4 @@
-import {TanaIntermediateNode} from "../../types/types";
+import {TanaIntermediateNode, TanaIntermediateSummary} from "../../types/types";
 import {marked} from "marked";
 import {idgenerator} from "../../utils/utils";
 import Heading = marked.Tokens.Heading;
@@ -10,7 +10,8 @@ import Code = marked.Tokens.Code;
 import TokensList = marked.TokensList;
 import Token = marked.Token;
 import Text = marked.Tokens.Text;
-import {createEmptyNode} from "./utils";
+import {createEmptyNode, debugPrint, debugPrintIf} from "./utils";
+import Table = marked.Tokens.Table;
 
 type ConvertedNodeResponse = {
     tanaNodes: TanaIntermediateNode[]
@@ -18,9 +19,22 @@ type ConvertedNodeResponse = {
 
 export class NotionMarkdownConverter{
 
-    public convert(content: string) : TanaIntermediateNode | undefined {
+    private summary: TanaIntermediateSummary = {
+        leafNodes: 0,
+        topLevelNodes: 0,
+        totalNodes: 0,
+        calendarNodes: 0,
+        fields: 0,
+        brokenRefs: 0
+    };
+
+    public convert(content: string | undefined) : [tanaNode: TanaIntermediateNode, tanaSummary: TanaIntermediateSummary] | undefined {
+        if(!content){
+            return;
+        }
         const lexed = marked.lexer(content);
-        return this.processMarkdownTokens(lexed);
+        const nodes = this.processMarkdownTokens(lexed);
+        return [nodes, this.summary];
     }
 
     private processMarkdownTokens(list: TokensList | Token[] | undefined): TanaIntermediateNode
@@ -42,18 +56,25 @@ export class NotionMarkdownConverter{
             pass++;
 
             switch(token.type){
-                case 'space':
+                case 'space': {
                     // at this point we don't care about spaces, so
                     // we'll just skip them
                     return;
-                case 'hr':
+                }
+                case 'table': {
+                    const table = this.tableToNode(token);
+                    this.attach(table, currentNode);
                     return;
-                case 'heading':
+                }
+                case 'hr': {
+                    return;
+                }
+                case 'heading': {
                     // process heading
                     previousHeadingLevel = currentHeadingLevel;
                     currentHeadingLevel = token.depth;
 
-                    if(pass == 1){
+                    if (pass == 1) {
                         // our first pass through
                         // for Notion exports, this is always an h1
                         rootNode = this.headingToNode(token).tanaNodes[0];
@@ -66,28 +87,26 @@ export class NotionMarkdownConverter{
                     const node = this.headingToNode(token).tanaNodes[0];
                     const headingParentLevel = currentHeadingLevel - 1; // a header should be a child of a previous heading level
 
-                    if(currentHeadingLevel < previousHeadingLevel){
+                    if (currentHeadingLevel < previousHeadingLevel) {
                         //our indents have moved back inward, so we need to clear previous nodes
-                        for(let i = previousHeadingLevel; i > currentHeadingLevel; i--){
-                            console.log("deleting: " + i);
+                        for (let i = previousHeadingLevel; i > currentHeadingLevel; i--) {
                             nodeMap.delete(i);
                         }
                     }
 
-                    if(nodeMap.has(headingParentLevel)) {
+                    if (nodeMap.has(headingParentLevel)) {
 
                         nodeMap.get(headingParentLevel)?.children?.push(node);
                         currentNode = node;
                         nodeMap.set(currentHeadingLevel, node);
-                    }
-                    else {
+                    } else {
                         const emptyNode = createEmptyNode();
 
-                        if(nodeMap.has(headingParentLevel - 1)){
+                        if (nodeMap.has(headingParentLevel - 1)) {
                             // attach our empty node to a parent
                             nodeMap.get(headingParentLevel - 1)?.children?.push(emptyNode);
                         } else {
-                            if(nodeMap.has(headingParentLevel - 2)){
+                            if (nodeMap.has(headingParentLevel - 2)) {
                                 const topNode = nodeMap.get(headingParentLevel - 2);
                                 const parentEmptyNode = createEmptyNode();
                                 topNode?.children?.push(parentEmptyNode);
@@ -111,29 +130,34 @@ export class NotionMarkdownConverter{
                     // everytime you go back indent, you need to reset the parent structure!!!
 
                     return;
-
-                case 'paragraph':
+                }
+                case 'paragraph': {
                     // process top level paragraph
                     const para = this.paragraphToNode(token);
                     this.attach(para, currentNode);
                     nodeMap.set(currentHeadingLevel, para.tanaNodes[0]);
                     return;
-                case 'list':
+                }
+                case 'list': {
                     // process top level starting list
                     this.attach(this.listToNodes(token), currentNode);
                     return;
-                case 'blockquote':
+                }
+                case 'blockquote': {
                     this.attach(this.blockQuoteToNode(token), currentNode);
                     return;
-                case 'code':
+                }
+                case 'code': {
                     // we're going to attach a code block as a child of the current level
                     const targetNode = nodeMap.get(currentHeadingLevel);
                     this.attach(this.codeToNode(token), targetNode!);
                     return;
-                default:
+                }
+                default: {
                     // in the case where we don't know what kind of node, then just
                     // add to a default node and we'll add an attribute of how it was imported?
                     console.log(`==UNKNOWN TYPE: ${token.type}, with text: ${token.raw}==`)
+                }
             }
         });
 
@@ -144,6 +168,19 @@ export class NotionMarkdownConverter{
         source.tanaNodes.forEach(n => {
             dest.children?.push(n);
         });
+    }
+
+    private tableToNode(token: Table): ConvertedNodeResponse {
+        return {
+            tanaNodes: [{
+                name: token.raw,
+                createdAt: 0,
+                editedAt: 0,
+                type: 'node',
+                uid: idgenerator(),
+                children: []
+            }]
+        };
     }
 
     private codeToNode(token: Code): ConvertedNodeResponse {

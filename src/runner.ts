@@ -4,30 +4,45 @@ import * as fs from 'fs';
 import { RoamConverter } from './converters/roam/index';
 import { TanaIntermediateFile } from './types/types';
 import { WorkflowyConverter } from './converters/workflowy';
+import {NotionPathConverter} from "./converters/notion-path";
 
-const fileType = process.argv[2];
-const file = process.argv[3];
+const importType = process.argv[2];
+const source = process.argv[3];
 
-if (!fileType) {
+if (!importType) {
   console.log('No file type provided');
   exit(0);
 }
 
-if (!file) {
+if (!source) {
   console.log('No file provided');
   exit(0);
 }
+const directoryImportTypes = ['notion-path'];
+const supportedImportTypes = ['roam', 'workflowy', ...directoryImportTypes];
+const isDirectoryType = (t: string) => directoryImportTypes.includes(t);
 
-const supportedTypes = ['roam', 'workflowy'];
-if (!supportedTypes.includes(fileType)) {
-  console.log(`File type: ${fileType} is not supported`);
+if (!supportedImportTypes.includes(importType)) {
+  console.log(`Import type: ${importType} is not supported`);
   exit(0);
 }
 
-console.log(`\n\nReading file: ${file} for import as: ${fileType}`);
+let contents = "", fullPath = "";
 
-const contents = fs.readFileSync(file, 'utf8');
-console.log('File length:', contents.length);
+if(isDirectoryType(importType)){
+
+  console.log(`\n\nProcessing directory: ${source} for import as: ${importType}`);
+  fullPath = source;
+
+}
+else {
+
+  console.log(`\n\nReading file: ${source} for import as: ${importType}`);
+
+  contents = fs.readFileSync(source, 'utf8');
+  console.log('File length:', contents.length);
+
+}
 
 function saveFile(fileName: string, tanaIntermediteNodes: TanaIntermediateFile) {
   const targetFileName = `${fileName}.tif.json`;
@@ -36,15 +51,18 @@ function saveFile(fileName: string, tanaIntermediteNodes: TanaIntermediateFile) 
 }
 
 let tanaIntermediteFile = undefined;
-switch (fileType) {
+switch (importType) {
   case 'roam':
     tanaIntermediteFile = new RoamConverter().convert(contents);
     break;
   case 'workflowy':
     tanaIntermediteFile = new WorkflowyConverter().convert(contents);
     break;
+  case 'notion-path':
+    tanaIntermediteFile = new NotionPathConverter().convertPath(fullPath);
+    break;
   default:
-    console.log(`File type ${fileType} is not supported`);
+    console.log(`File type ${importType} is not supported`);
     exit(0);
 }
 
@@ -55,4 +73,4 @@ if (!tanaIntermediteFile) {
 
 console.dir(tanaIntermediteFile.summary);
 
-saveFile(file, tanaIntermediteFile);
+saveFile(source, tanaIntermediteFile);
