@@ -13,9 +13,11 @@ import Text = marked.Tokens.Text;
 import {createEmptyNode, debugPrint, debugPrintIf} from "./utils";
 import Table = marked.Tokens.Table;
 
-type ConvertedNodeResponse = {
+export type ConvertedNodeResponse = {
     tanaNodes: TanaIntermediateNode[]
 };
+
+export type EmptyNodeResponse = unknown;
 
 export class NotionMarkdownConverter{
 
@@ -54,6 +56,9 @@ export class NotionMarkdownConverter{
 
         list?.forEach((token) => {
             pass++;
+            // new MarkdownTokenStrategy(token.type)
+            // .getConverter()
+            // .convert(token)
 
             switch(token.type){
                 case 'space': {
