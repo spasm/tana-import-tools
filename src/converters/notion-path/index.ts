@@ -113,16 +113,17 @@ export class NotionPathConverter {
 
     private processMarkdownItem(item: NotionExportItem): NotionExportItem | undefined {
         if(item.itemType !== ExportItemType.Markdown){
-            debugPrint("Not a markdown file: " + item.itemType);
             return;
         }
         const converted = new NotionMarkdownConverter().convert(item.getContents());
-        const node = converted![0];
-        const summary = converted![1];
-        item.tanaNodeRef = node;
-        this.mergeSummaryWith(summary);
+        if(converted){
+            const node = converted[0];
+            const summary = converted[1];
+            item.tanaNodeRef = node;
+            this.mergeSummaryWith(summary);
 
-        return item;
+            return item;
+        }
     }
 
     private csvOfSameNameExists(fullPath: string){

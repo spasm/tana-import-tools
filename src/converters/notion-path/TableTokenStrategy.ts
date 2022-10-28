@@ -11,6 +11,6 @@ export class TableTokenStrategy extends BaseTokenStrategy {
             type: 'node',
             uid: idgenerator(),
             children: []
-        });
+        }, this._token);
     }
 }

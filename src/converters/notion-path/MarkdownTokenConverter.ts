@@ -27,6 +27,7 @@ export class MarkdownTokenConverter {
             return;
         }
 
+        debugPrint(`Choosing strategy for: ${this._token?.type}`);
         switch(this._token.type){
             case 'space':{
                 this._converterStrategy = new SpaceTokenStrategy(this._token);
@@ -62,7 +63,8 @@ export class MarkdownTokenConverter {
             }
             default: {
                 debugPrint(`UNKNOWN TYPE: ${this._token.type}, with content: ${this._token.raw}`)
-                //TODO: what do we want to do in this instance?
+                // TODO: what do we want to do in this instance?
+                // Potentially put into the Audit node?
             }
         }
         return this._converterStrategy;

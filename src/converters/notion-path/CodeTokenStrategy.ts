@@ -14,6 +14,6 @@ export class CodeTokenStrategy extends BaseTokenStrategy {
             type: 'codeblock',
             uid: idgenerator(),
             children: []
-        });
+        }, this._token);
     }
 }

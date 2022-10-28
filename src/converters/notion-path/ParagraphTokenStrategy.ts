@@ -40,6 +40,6 @@ export class ParagraphTokenStrategy extends BaseTokenStrategy {
             createdAt: 0,
             editedAt: 0,
             children: []
-        });
+        }, this._token);
     }
 }

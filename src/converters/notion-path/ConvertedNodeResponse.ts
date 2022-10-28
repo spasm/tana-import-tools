@@ -1,4 +1,6 @@
 import {TanaIntermediateNode} from "../../types/types";
+import {marked} from "marked";
+import Token = marked.Token;
 
 export class ConvertedNodeResponse {
 
@@ -8,7 +10,7 @@ export class ConvertedNodeResponse {
         return this._tanaNodes;
     }
 
-    constructor(node?: TanaIntermediateNode) {
+    constructor(node?: TanaIntermediateNode, public token?: Token) {
         if (node) {
             this._tanaNodes.push(node);
         }
@@ -26,6 +28,10 @@ export class ConvertedNodeResponse {
 
     public firstNode(): TanaIntermediateNode | undefined {
         return this._tanaNodes?.at(0);
+    }
+
+    public isHeading(): boolean {
+        return this.token?.type === 'heading';
     }
 
 }

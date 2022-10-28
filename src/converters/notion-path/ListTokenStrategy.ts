@@ -21,7 +21,7 @@ export class ListTokenStrategy extends BaseTokenStrategy {
         };
         this.addListToNode(tempNode, this._token as List);
 
-        const response = new ConvertedNodeResponse();
+        const response = new ConvertedNodeResponse(undefined, this._token);
         if (tempNode.children) {
             response.addTanaNodes(tempNode.children);
         }
