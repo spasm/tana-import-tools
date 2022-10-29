@@ -18,11 +18,12 @@ export class NotionExportItem {
     public readonly name: string;
     private readonly parsedPath: ParsedPath | undefined;
     public readonly fullPath: string;
+    public readonly parentDatabase: NotionExportItem | undefined;
 
-    constructor(fullPath: string) {
+    constructor(fullPath: string, parentDatabase: NotionExportItem | undefined = undefined) {
         this.parsedPath = path.parse(fullPath);
         this.fullPath = fullPath;
-
+        this.parentDatabase = parentDatabase;
         this.itemType = this.getItemType();
         this.id = this.getNotionId();
         this.name = this.getItemName();
@@ -72,5 +73,9 @@ export class NotionExportItem {
 
     public isCsvItem(): boolean {
         return this.itemType === ExportItemType.CSV;
+    }
+
+    public hasParentDatabase(): boolean {
+        return this.parentDatabase !== undefined;
     }
 }

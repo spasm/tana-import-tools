@@ -5,6 +5,7 @@ import {MarkdownTokenConverter} from "./MarkdownTokenConverter";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {ConverterContext} from "./ConverterContext";
 import Heading = marked.Tokens.Heading;
+import {NotionExportItem} from "./NotionExportItem";
 
 export class NotionMarkdownConverter{
 
@@ -17,43 +18,46 @@ export class NotionMarkdownConverter{
         fields: 0,
         brokenRefs: 0
     };
+    private _item: NotionExportItem;
+    
+    constructor(item: NotionExportItem){
+        this._item = item;
+    }
 
-    public convert(content: string | undefined) : [tanaNode: TanaIntermediateNode, tanaSummary: TanaIntermediateSummary] | undefined {
+    public convert() : [tanaNode: TanaIntermediateNode, tanaSummary: TanaIntermediateSummary] | undefined {
 
+        const content = this._item.getContents();
         if(!content) { return; }
 
-        marked.lexer(content).forEach( token => {
-            debugPrint("TOKEN -> " + JSON.stringify(token));
+        const tokens = marked.lexer(content);
+        debugPrint(JSON.stringify(tokens));
+
+        tokens.forEach( token => {
 
             this._context.incrementPassCount();
             const convertedNode = new MarkdownTokenConverter(token).getConverter()?.convert();
             let targetNode = this._context.currentNode;
 
-            debugPrint(`token type: ${convertedNode!.token?.type}`)
-
             if(convertedNode){
 
-                if(convertedNode.token?.type === 'heading') { // is it a heading?  special rules
-                    debugPrint("attaching heading: " + JSON.stringify(convertedNode));
+                if(convertedNode.token?.type === 'heading') {
+                    // is it a heading?  special rules
                     this.attachHeading(convertedNode);
                     return;
                 }
 
-                if(convertedNode.token?.type === 'code'){ // is it a code block?  semi-special rules
-                    debugPrint("attaching code");
+                if(convertedNode.token?.type === 'code'){
+                    // is it a code block?  semi-special rules
                     targetNode = this._context.nodeMap.get(
                         this._context.currentHeadingLevel)
                 }
 
                 if(targetNode){
-                    debugPrint("attaching other");
                     this.attach(convertedNode, targetNode);
                 }
             }
-            debugPrint(`Context: ${JSON.stringify(this._context)}`);
         });
 
-        debugPrint(`Root: ${JSON.stringify(this._context.rootNode)}`);
         return [this._context.rootNode!, this._summary];
     }
 

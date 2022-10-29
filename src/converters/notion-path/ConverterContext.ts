@@ -1,5 +1,6 @@
 import {TanaIntermediateNode} from "../../types/types";
 import {debugPrint} from "./utils";
+import {NotionExportItem} from "./NotionExportItem";
 
 export class ConverterContext {
 
@@ -25,7 +26,6 @@ export class ConverterContext {
             throw new Error("No root node was passed.");
         }
 
-        debugPrint("assigning root node: " + JSON.stringify(value));
         this._rootNode = value;
         this.currentNode = this._rootNode;
         this.nodeMap.set(this.currentNodeLevel, this._rootNode);
@@ -50,7 +50,10 @@ export class ConverterContext {
     }
 
     public isFirstPass(): boolean {
-        debugPrint("pass count: " + this._passCount);
         return this._passCount === 1;
+    }
+
+    public isSecondPass(): boolean {
+        return this._passCount === 2;
     }
 }

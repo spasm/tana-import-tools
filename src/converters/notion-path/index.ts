@@ -31,7 +31,7 @@ export class NotionPathConverter {
         return tanaOutput;
     }
 
-    private walkPath(dir: string, nodes: TanaIntermediateNode[]): void{
+    private walkPath(dir: string, nodes: TanaIntermediateNode[], dbScope: NotionExportItem | undefined = undefined): void{
 
         debugPrint("ROOT SCAN:" + dir);
 
@@ -67,7 +67,7 @@ export class NotionPathConverter {
                     debugPrint("csv exists!" + item.fullPath);
                     const parentNode = createNode(item.name);
                     nodes.push(parentNode);
-                    this.walkPath(item.fullPath, parentNode.children!);
+                    this.walkPath(item.fullPath, parentNode.children!, item);
                     return;
                 }
 
@@ -78,7 +78,7 @@ export class NotionPathConverter {
                     // contents for a page.  This might be images, this might be a database
                     // in the case of a database, once we go into this directory there's probably another
                     // directory, and a companion CSV for us to know to inspect the database
-                    const nextItem = new NotionExportItem(item.fullPath + ".md");
+                    const nextItem = new NotionExportItem(item.fullPath + ".md", dbScope);
                     const processedNextItem = this.processMarkdownItem(nextItem);
 
                     if(!processedNextItem || !processedNextItem?.tanaNodeRef){
@@ -115,10 +115,9 @@ export class NotionPathConverter {
         if(item.itemType !== ExportItemType.Markdown){
             return;
         }
-        const converted = new NotionMarkdownConverter().convert(item.getContents());
+        const converted = new NotionMarkdownConverter(item).convert();
         if(converted){
-            const node = converted[0];
-            const summary = converted[1];
+            const [node, summary] = converted;
             item.tanaNodeRef = node;
             this.mergeSummaryWith(summary);
 
