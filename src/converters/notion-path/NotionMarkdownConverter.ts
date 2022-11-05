@@ -101,12 +101,6 @@ export class NotionMarkdownConverter{
 
         context.currentHeadingLevel = token.depth;
 
-        // only on the first pass
-        // if(context.isFirstPass()){
-        //     context.rootNode = node;
-        //     return;
-        // }
-
         // we have a header, and it's not the first pass
         const headingParentLevel = context.currentHeadingLevel - 1; // a header should be a child of a previous heading level
         if(context.currentHeadingLevel < context.previousHeadingLevel){

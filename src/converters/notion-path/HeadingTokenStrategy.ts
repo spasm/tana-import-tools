@@ -14,7 +14,8 @@ export class HeadingTokenStrategy extends BaseTokenStrategy {
             uid: idgenerator(),
             createdAt: 0,
             editedAt: 0,
-            children: []
+            children: [],
+            refs: []
         }, this._token);
     }
 }

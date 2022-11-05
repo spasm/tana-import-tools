@@ -13,7 +13,8 @@ export class CodeTokenStrategy extends BaseTokenStrategy {
             editedAt: 0,
             type: 'codeblock',
             uid: idgenerator(),
-            children: []
+            children: [],
+            refs: []
         }, this._token);
     }
 }

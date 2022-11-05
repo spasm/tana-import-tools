@@ -14,7 +14,8 @@ export function createNode(name: string): TanaIntermediateNode {
         editedAt: 0,
         type: 'node',
         uid: idgenerator(),
-        children: []
+        children: [],
+        refs: []
     };
 }
 
@@ -33,7 +34,8 @@ export function createField(name: string): TanaIntermediateNode {
         editedAt: 0,
         type: 'field',
         uid: idgenerator(),
-        children: []
+        children: [],
+        refs: []
     };
 }
 

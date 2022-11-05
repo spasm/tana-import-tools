@@ -17,7 +17,8 @@ export class ListTokenStrategy extends BaseTokenStrategy {
             name: "temp",
             type: "node",
             uid: "",
-            children: []
+            children: [],
+            refs: []
         };
         this.addListToNode(tempNode, this._token as List);
 

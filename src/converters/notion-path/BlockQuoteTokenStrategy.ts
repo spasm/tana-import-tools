@@ -10,7 +10,8 @@ export class BlockQuoteTokenStrategy extends BaseTokenStrategy {
             editedAt: 0,
             type: 'node',
             uid: idgenerator(),
-            children: []
+            children: [],
+            refs: []
         }, this._token);
     }
 }

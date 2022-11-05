@@ -11,6 +11,7 @@ import {NotionMarkdownConverter} from "./NotionMarkdownConverter";
 import {createNode, debugPrint} from "./utils";
 import {NotionDatabaseContext} from "./NotionDatabaseContext";
 import {NotionMarkdownItem} from "./NotionMarkdownItem";
+import {types} from "util";
 
 export class NotionPathConverter {
 
@@ -33,6 +34,7 @@ export class NotionPathConverter {
         };
 
         this.walkPath(fullPath, tanaOutput.nodes);
+        this.performPostProcessing(tanaOutput);
         return tanaOutput;
     }
 
@@ -160,4 +162,63 @@ export class NotionPathConverter {
         this.summary.brokenRefs += origin.brokenRefs;
     }
 
+    private performPostProcessing(tanaOutput: TanaIntermediateFile): void {
+        const nodeTypesToCount = ['node'];
+        const walkNodes = (nodes: Array<TanaIntermediateNode>, level:number = 0) => {
+            level++;
+            nodes.forEach(node => {
+
+                this.fixLinkReferences(node);
+
+                if(!nodeTypesToCount.includes(node.type)) {
+                    return;
+                }
+                if(level === 1) {
+                    tanaOutput.summary.topLevelNodes++;
+                }
+                if(level > 1) {
+                    tanaOutput.summary.leafNodes++;
+                }
+                if(node.children){
+                    walkNodes(node.children, level)
+                }
+            });
+        };
+
+        walkNodes(tanaOutput.nodes);
+        tanaOutput.summary.totalNodes = tanaOutput.summary.topLevelNodes + tanaOutput.summary.leafNodes;
+        tanaOutput.summary.fields = tanaOutput.attributes?.length ?? 0;
+    }
+
+    private fixLinkReferences(node: TanaIntermediateNode): void {
+        const regex = /\[([^\]]+)\]\(([^\)]+)\)/;
+        const match = node.name.match(regex);
+        const internalExtensions = ['.csv', '.md'];
+        let isInternal = false;
+        const idLength = 32;
+        let totalLength = 0;
+
+        if(match) {
+            const alias = match?.at(1);
+            const url = match?.at(2);
+
+            internalExtensions.forEach(ext => {
+                if(url?.endsWith(ext)) {
+                    isInternal = true;
+                    totalLength = idLength + ext.length
+                }
+            });
+
+            if(!isInternal || !url){ return; } // do nothing, leave the link as is
+
+            const id = url.substring(url.length - totalLength, url.length - (totalLength - idLength));
+            const item = this.tracking.get(id);
+            if(item) {
+                const uid = item.tanaNodeRef?.uid;
+                if(!uid){ return;}
+                node.name = `[${alias}]([[${uid}]])`;
+                node.refs?.push(uid);
+            }
+        }
+    }
 }

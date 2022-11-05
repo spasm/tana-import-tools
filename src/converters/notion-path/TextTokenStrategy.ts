@@ -40,7 +40,8 @@ export class TextTokenStrategy extends BaseTokenStrategy {
             uid: idgenerator(),
             createdAt: 0,
             editedAt: 0,
-            children: []
+            children: [],
+            refs: []
         });
     }
 }
