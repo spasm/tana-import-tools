@@ -1,6 +1,6 @@
-import {TanaIntermediateNode, TanaIntermediateSummary} from "../../types/types";
+import {TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSummary} from "../../types/types";
 import {marked} from "marked";
-import {createEmptyNode, debugPrint} from "./utils";
+import {createAttribute, createEmptyNode, createField, createNode, debugPrint} from "./utils";
 import {MarkdownTokenConverter} from "./MarkdownTokenConverter";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {ConverterContext} from "./ConverterContext";
@@ -18,20 +18,22 @@ export class NotionMarkdownConverter{
         fields: 0,
         brokenRefs: 0
     };
+    private _attributes= new Array<TanaIntermediateAttribute>();
     private _item: NotionMarkdownItem;
     
     constructor(item: NotionMarkdownItem){
-        if(!item){ throw new Error("Must pass a NotionExportItem"); }
+        if(!item){ throw new Error("Must pass a NotionMarkdownItem"); }
         this._item = item;
-        debugPrint(`DB: ${this._item.parentDatabase?.data}`);
     }
 
-    public convert() : [tanaNode: TanaIntermediateNode, tanaSummary: TanaIntermediateSummary] | undefined {
+    public convert() : [tanaNode: TanaIntermediateNode,
+        tanaSummary: TanaIntermediateSummary,
+        attributes: Array<TanaIntermediateAttribute>] | undefined {
 
-        const content = this._item.getContents();
-        if(!content) { return; }
+        const tokens = marked.lexer(this._item.body);
+        this._context.rootNode = createNode(this._item.title);
+        this.attachPageFields();
 
-        const tokens = marked.lexer(content);
         // debugPrint(JSON.stringify(tokens));
 
         tokens.forEach( token => {
@@ -62,7 +64,19 @@ export class NotionMarkdownConverter{
             }
         });
 
-        return [this._context.rootNode!, this._summary];
+        return [this._context.rootNode!, this._summary, this._attributes];
+    }
+
+    private attachPageFields(): void {
+        this._item.fields.forEach(field => {
+            const tanaField = createField(field.name);
+            const tanaAttr = createAttribute(field.name);
+
+            this._context.rootNode?.children?.push(tanaField);
+            tanaField.children?.push(createNode(field.body));
+
+            this._attributes.push(tanaAttr);
+        })
     }
 
     private attach(source: ConvertedNodeResponse, dest: TanaIntermediateNode): void {
@@ -88,10 +102,10 @@ export class NotionMarkdownConverter{
         context.currentHeadingLevel = token.depth;
 
         // only on the first pass
-        if(context.isFirstPass()){
-            context.rootNode = node;
-            return;
-        }
+        // if(context.isFirstPass()){
+        //     context.rootNode = node;
+        //     return;
+        // }
 
         // we have a header, and it's not the first pass
         const headingParentLevel = context.currentHeadingLevel - 1; // a header should be a child of a previous heading level

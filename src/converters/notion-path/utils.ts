@@ -1,4 +1,4 @@
-import {TanaIntermediateNode} from "../../types/types";
+import {TanaIntermediateAttribute, TanaIntermediateNode} from "../../types/types";
 import {idgenerator} from "../../utils/utils";
 import {marked} from "marked";
 import Token = marked.Token;
@@ -15,7 +15,26 @@ export function createNode(name: string): TanaIntermediateNode {
         type: 'node',
         uid: idgenerator(),
         children: []
+    };
+}
+
+export function createAttribute(name: string): TanaIntermediateAttribute {
+    return {
+        name: name,
+        values: [],
+        count: 1
     }
+}
+
+export function createField(name: string): TanaIntermediateNode {
+    return {
+        name: name,
+        createdAt: 0,
+        editedAt: 0,
+        type: 'field',
+        uid: idgenerator(),
+        children: []
+    };
 }
 
 export function debugPrint(what: any): void {

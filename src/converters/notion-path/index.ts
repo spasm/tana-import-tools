@@ -17,6 +17,8 @@ export class NotionPathConverter {
     private tracking: Map<string, NotionExportItem> = new Map();
     private summary: TanaIntermediateSummary = { brokenRefs: 0, calendarNodes: 0, fields: 0,
         leafNodes: 0, topLevelNodes: 0, totalNodes: 0};
+    private _attributes = new Array<TanaIntermediateAttribute>();
+
     private filesToSkip = ['.DS_Store'];
 
     public convertPath(fullPath: string): TanaIntermediateFile | undefined{
@@ -26,7 +28,8 @@ export class NotionPathConverter {
         const tanaOutput: TanaIntermediateFile = {
             version: 'TanaIntermediateFile V0.1',
             summary: this.summary,
-            nodes: []
+            nodes: [],
+            attributes: this._attributes
         };
 
         this.walkPath(fullPath, tanaOutput.nodes);
@@ -122,10 +125,10 @@ export class NotionPathConverter {
         const mdItem = new NotionMarkdownItem(item.fullPath, item.parentDatabase);
         const converted = new NotionMarkdownConverter(mdItem).convert();
         if(converted){
-            const [node, summary] = converted;
+            const [node, summary, attributes] = converted;
             item.tanaNodeRef = node;
             this.mergeSummaryWith(summary);
-
+            this.mergeAttributesWith(attributes);
             return item;
         }
     }
@@ -136,6 +139,16 @@ export class NotionPathConverter {
 
     private markdownOfSameNameExists(fullPath: string){
         return fs.existsSync(fullPath + ".md");
+    }
+
+    private mergeAttributesWith(source: Array<TanaIntermediateAttribute>): void {
+        const existing = this._attributes.map(a => a.name);
+
+        source.forEach(attr => {
+            if(!existing.includes(attr.name)){
+                this._attributes.push(attr);
+            }
+        })
     }
 
     private mergeSummaryWith(origin: TanaIntermediateSummary): void {

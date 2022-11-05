@@ -23,11 +23,9 @@ export class NotionDatabaseContext {
         }
         this._item = item;
         this.loadBuffer();
-        console.log('after loadbuffer -> ' + JSON.stringify(this._headerRow));
     }
 
     private loadBuffer(): void {
-        console.log('loadbuffer');
         let pass = 0;
         const file =fs.readFileSync(this._item.fullPath, 'utf-8');
         const records = parse(file, {columns:false});
@@ -38,7 +36,6 @@ export class NotionDatabaseContext {
                 return;
             }
             this._db.push(record);
-            console.log(record);
         });
     }
 
