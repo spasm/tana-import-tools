@@ -1841,6 +1841,11 @@
     "shebang-command" "^2.0.0"
     "which" "^2.0.1"
 
+"csv-parse@^5.3.1":
+  "integrity" "sha512-R4Hv6eGJNzgcKdThZ6XORbSQ873HVcNke74QIq+LbwpT90LaZ8Xzl7KKiuIP16xq/P7ofzRt0h7S0xm+fVScsw=="
+  "resolved" "https://registry.npmjs.org/csv-parse/-/csv-parse-5.3.1.tgz"
+  "version" "5.3.1"
+
 "dashdash@^1.12.0":
   "integrity" "sha512-jRFi8UDGo6j+odZiEpjazZaWqEal3w/basFjQHQEwVtZJGDpxbH1MeYluwCS8Xq5wmLJooDlMgvVarmWfGM44g=="
   "resolved" "https://registry.npmjs.org/dashdash/-/dashdash-1.14.1.tgz"

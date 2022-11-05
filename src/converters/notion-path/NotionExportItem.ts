@@ -1,6 +1,7 @@
 import path, {ParsedPath} from "path";
 import fs from "fs";
 import {TanaIntermediateNode} from "../../types/types";
+import {NotionDatabaseContext} from "./NotionDatabaseContext";
 
 export enum ExportItemType {
     Unknown,
@@ -18,9 +19,9 @@ export class NotionExportItem {
     public readonly name: string;
     private readonly parsedPath: ParsedPath | undefined;
     public readonly fullPath: string;
-    public readonly parentDatabase: NotionExportItem | undefined;
+    public readonly parentDatabase: NotionDatabaseContext | undefined;
 
-    constructor(fullPath: string, parentDatabase: NotionExportItem | undefined = undefined) {
+    constructor(fullPath: string, parentDatabase: NotionDatabaseContext | undefined = undefined) {
         this.parsedPath = path.parse(fullPath);
         this.fullPath = fullPath;
         this.parentDatabase = parentDatabase;

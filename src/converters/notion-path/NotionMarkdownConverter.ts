@@ -5,7 +5,7 @@ import {MarkdownTokenConverter} from "./MarkdownTokenConverter";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {ConverterContext} from "./ConverterContext";
 import Heading = marked.Tokens.Heading;
-import {NotionExportItem} from "./NotionExportItem";
+import {NotionMarkdownItem} from "./NotionMarkdownItem";
 
 export class NotionMarkdownConverter{
 
@@ -18,10 +18,12 @@ export class NotionMarkdownConverter{
         fields: 0,
         brokenRefs: 0
     };
-    private _item: NotionExportItem;
+    private _item: NotionMarkdownItem;
     
-    constructor(item: NotionExportItem){
+    constructor(item: NotionMarkdownItem){
+        if(!item){ throw new Error("Must pass a NotionExportItem"); }
         this._item = item;
+        debugPrint(`DB: ${this._item.parentDatabase?.data}`);
     }
 
     public convert() : [tanaNode: TanaIntermediateNode, tanaSummary: TanaIntermediateSummary] | undefined {
@@ -30,7 +32,7 @@ export class NotionMarkdownConverter{
         if(!content) { return; }
 
         const tokens = marked.lexer(content);
-        debugPrint(JSON.stringify(tokens));
+        // debugPrint(JSON.stringify(tokens));
 
         tokens.forEach( token => {
 
@@ -40,18 +42,20 @@ export class NotionMarkdownConverter{
 
             if(convertedNode){
 
+                // headings have special rules since they drive structure
+
                 if(convertedNode.token?.type === 'heading') {
-                    // is it a heading?  special rules
                     this.attachHeading(convertedNode);
                     return;
                 }
 
+                // code fences sometimes have special nesting expectations
                 if(convertedNode.token?.type === 'code'){
-                    // is it a code block?  semi-special rules
                     targetNode = this._context.nodeMap.get(
                         this._context.currentHeadingLevel)
                 }
 
+                // everything else, generic attachment
                 if(targetNode){
                     this.attach(convertedNode, targetNode);
                 }

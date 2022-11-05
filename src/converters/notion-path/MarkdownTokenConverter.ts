@@ -27,7 +27,7 @@ export class MarkdownTokenConverter {
             return;
         }
 
-        debugPrint(`Choosing strategy for: ${this._token?.type}`);
+        // debugPrint(`Choosing strategy for: ${this._token?.type}`);
         switch(this._token.type){
             case 'space':{
                 this._converterStrategy = new SpaceTokenStrategy(this._token);

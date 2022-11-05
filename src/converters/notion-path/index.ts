@@ -9,6 +9,8 @@ import fs from "fs";
 import path from "path";
 import {NotionMarkdownConverter} from "./NotionMarkdownConverter";
 import {createNode, debugPrint} from "./utils";
+import {NotionDatabaseContext} from "./NotionDatabaseContext";
+import {NotionMarkdownItem} from "./NotionMarkdownItem";
 
 export class NotionPathConverter {
 
@@ -31,9 +33,10 @@ export class NotionPathConverter {
         return tanaOutput;
     }
 
-    private walkPath(dir: string, nodes: TanaIntermediateNode[], dbScope: NotionExportItem | undefined = undefined): void{
+    private walkPath(dir: string, nodes: TanaIntermediateNode[],
+                     dbContext: NotionDatabaseContext | undefined = undefined): void{
 
-        debugPrint("ROOT SCAN:" + dir);
+        debugPrint("Entering Path: " + dir);
 
         const files = fs.readdirSync(dir);
         files.forEach(file => {
@@ -41,7 +44,7 @@ export class NotionPathConverter {
                 return;
             }
 
-            const item = new NotionExportItem(path.join(dir, file));
+            const item = new NotionExportItem(path.join(dir, file), dbContext);
 
             // Have we already processed this file via another branch? skip if so
             if(this.isTracking(item)){
@@ -67,7 +70,8 @@ export class NotionPathConverter {
                     debugPrint("csv exists!" + item.fullPath);
                     const parentNode = createNode(item.name);
                     nodes.push(parentNode);
-                    this.walkPath(item.fullPath, parentNode.children!, item);
+                    const csvItem = new NotionExportItem(item.fullPath + ".csv");
+                    this.walkPath(item.fullPath, parentNode.children!, new NotionDatabaseContext(csvItem));
                     return;
                 }
 
@@ -78,7 +82,7 @@ export class NotionPathConverter {
                     // contents for a page.  This might be images, this might be a database
                     // in the case of a database, once we go into this directory there's probably another
                     // directory, and a companion CSV for us to know to inspect the database
-                    const nextItem = new NotionExportItem(item.fullPath + ".md", dbScope);
+                    const nextItem = new NotionExportItem(item.fullPath + ".md", dbContext);
                     const processedNextItem = this.processMarkdownItem(nextItem);
 
                     if(!processedNextItem || !processedNextItem?.tanaNodeRef){
@@ -115,7 +119,8 @@ export class NotionPathConverter {
         if(item.itemType !== ExportItemType.Markdown){
             return;
         }
-        const converted = new NotionMarkdownConverter(item).convert();
+        const mdItem = new NotionMarkdownItem(item.fullPath, item.parentDatabase);
+        const converted = new NotionMarkdownConverter(mdItem).convert();
         if(converted){
             const [node, summary] = converted;
             item.tanaNodeRef = node;
