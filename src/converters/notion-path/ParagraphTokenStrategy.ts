@@ -23,7 +23,7 @@ export class ParagraphTokenStrategy extends BaseTokenStrategy {
                     para += `**${t.text}**`;
                     return;
                 case 'codespan':
-                    para += `^^${t.text}^^`;
+                    para += `\`${t.text}\``;
                     return;
                 case 'link':
                     para += `${t.raw}`;
