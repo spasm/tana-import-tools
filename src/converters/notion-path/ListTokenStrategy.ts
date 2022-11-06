@@ -7,6 +7,9 @@ import {debugPrint} from "./utils";
 import {marked} from "marked";
 import ListItem = marked.Tokens.ListItem;
 import List = marked.Tokens.List;
+import {HeadingTokenStrategy} from "./HeadingTokenStrategy";
+import {ParagraphTokenStrategy} from "./ParagraphTokenStrategy";
+import {CodeTokenStrategy} from "./CodeTokenStrategy";
 
 export class ListTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
@@ -44,6 +47,9 @@ export class ListTokenStrategy extends BaseTokenStrategy {
         let currentNode: TanaIntermediateNode;
 
         token.tokens.forEach(t => {
+
+            let newNode: TanaIntermediateNode | undefined;
+
             switch (t.type) {
                 case "list": {
                     // if it's a list, it's the start of a new list
@@ -51,25 +57,32 @@ export class ListTokenStrategy extends BaseTokenStrategy {
                     return;
                 }
                 case "text": {
-                    const textNode = new TextTokenStrategy(t).convert().firstNode();
-                    if (textNode) {
-                        currentNode = textNode;
-                        node.children?.push(currentNode);
-                    }
-                    return;
+                    newNode = new TextTokenStrategy(t).convert().firstNode();
+                    break;
                 }
                 case "blockquote": {
-                    const blockQuoteNode = new BlockQuoteTokenStrategy(t).convert().firstNode();
-                    if (blockQuoteNode) {
-                        currentNode = blockQuoteNode;
-                        node.children?.push(currentNode);
-                    }
-                    return;
+                    newNode = new BlockQuoteTokenStrategy(t).convert().firstNode();
+                    break;
+                }
+                case "heading": {
+                    newNode = new HeadingTokenStrategy(t).convert().firstNode();
+                    break;
+                }
+                case "paragraph": {
+                    newNode = new ParagraphTokenStrategy(t).convert().firstNode();
+                    break;
+                }
+                case "code": {
+                    newNode = new CodeTokenStrategy(t).convert().firstNode();
+                    break;
                 }
                 default: {
-                    debugPrint("Unknown type: " + t.type + "text: " + t.raw);
-                    return;
+                    debugPrint(`Unknown type in ListTokenStrategy: ${t.type}, with content: ${t.raw}`);
                 }
+            }
+            if(newNode) {
+                currentNode = newNode;
+                node.children?.push(currentNode);
             }
         });
     }

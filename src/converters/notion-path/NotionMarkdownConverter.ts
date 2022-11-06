@@ -50,13 +50,15 @@ export class NotionMarkdownConverter{
                 // headings have special rules since they drive structure
                 if(convertedNode.token?.type === 'heading') {
                     this.attachHeading(convertedNode);
+                    this._context.previousNode = convertedNode?.lastNode();
+                    this._context.previousTokenType = convertedNode?.token?.type;
                     return;
                 }
 
                 // a new list, or codeblock, and we'll nest it under the previous node
                 // sometimes this is the right thing to do, sometimes not
                 if((convertedNode.token?.type === 'list' || convertedNode.token?.type === 'code') &&
-                    this._context.previousTokenType === 'paragraph') {
+                    this._context.previousTokenType === 'paragraph' || this._context.previousTokenType === 'heading') {
                     targetNode = this._context.previousNode;
                 }
 
@@ -120,13 +122,15 @@ export class NotionMarkdownConverter{
             context.currentNode = node;
             context.nodeMap.set(context.currentHeadingLevel, node);
         } else {
-            const emptyNode = createEmptyNode();
+            //const emptyNode = createEmptyNode(); // experimenting with > vs empty
+            const emptyNode = createNode(">");
             if(context.nodeMap.has(headingParentLevel - 1)){
                 context.nodeMap.get(headingParentLevel - 1)?.children?.push(emptyNode);
             } else {
                 if(context.nodeMap.has(headingParentLevel - 2)){
                     const topNode = context.nodeMap.get(headingParentLevel - 2);
-                    const parentEmptyNode = createEmptyNode();
+                    //const parentEmptyNode = createEmptyNode(); // experimenting with > instead of empty
+                    const parentEmptyNode = createNode(">");
                     topNode?.children?.push(parentEmptyNode);
                     context.nodeMap.set(headingParentLevel - 1, parentEmptyNode);
                     parentEmptyNode.children?.push(emptyNode);

@@ -62,7 +62,7 @@ export class MarkdownTokenConverter {
                 break;
             }
             default: {
-                debugPrint(`UNKNOWN TYPE: ${this._token.type}, with content: ${this._token.raw}`)
+                debugPrint(`Unknown Type in MarkdownTokenConverter: ${this._token.type}, with content: ${this._token.raw}`)
                 // TODO: what do we want to do in this instance?
                 // Potentially put into the Audit node?
             }
