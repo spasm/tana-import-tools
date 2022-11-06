@@ -44,17 +44,20 @@ export class NotionMarkdownConverter{
 
             if(convertedNode){
 
-                // headings have special rules since they drive structure
+                // skip spaces
+                if(convertedNode.token?.type === 'space') { return; }
 
+                // headings have special rules since they drive structure
                 if(convertedNode.token?.type === 'heading') {
                     this.attachHeading(convertedNode);
                     return;
                 }
 
-                // code fences sometimes have special nesting expectations
-                if(convertedNode.token?.type === 'code'){
-                    targetNode = this._context.nodeMap.get(
-                        this._context.currentHeadingLevel)
+                // a new list, or codeblock, and we'll nest it under the previous node
+                // sometimes this is the right thing to do, sometimes not
+                if((convertedNode.token?.type === 'list' || convertedNode.token?.type === 'code') &&
+                    this._context.previousTokenType === 'paragraph') {
+                    targetNode = this._context.previousNode;
                 }
 
                 // everything else, generic attachment
@@ -62,6 +65,9 @@ export class NotionMarkdownConverter{
                     this.attach(convertedNode, targetNode);
                 }
             }
+
+            this._context.previousNode = convertedNode?.lastNode();
+            this._context.previousTokenType = convertedNode?.token?.type;
         });
 
         return [this._context.rootNode!, this._summary, this._attributes];

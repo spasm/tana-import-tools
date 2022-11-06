@@ -200,8 +200,6 @@ export class NotionPathConverter {
 
         // fix internal markdown links first
         if(match) {
-            if(node.name.includes('.md')) { console.log(node.name); }
-
             const alias = match?.at(1);
             const url = match?.at(2);
             let totalLength = 0;

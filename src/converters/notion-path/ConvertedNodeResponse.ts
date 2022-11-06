@@ -30,6 +30,10 @@ export class ConvertedNodeResponse {
         return this._tanaNodes?.at(0);
     }
 
+    public lastNode(): TanaIntermediateNode | undefined {
+        return this._tanaNodes?.at(this._tanaNodes.length - 1);
+    }
+
     public isHeading(): boolean {
         return this.token?.type === 'heading';
     }

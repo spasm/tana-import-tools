@@ -38,7 +38,17 @@ export class ConverterContext {
     private _currentHeadingLevel = 0;
     private _previousHeadingLevel = 0;
 
-    public currentNode: TanaIntermediateNode | undefined;
+    private _currentNode: TanaIntermediateNode | undefined;
+    public set currentNode(value: TanaIntermediateNode | undefined) {
+        this._currentNode = value;
+    }
+    public get currentNode():TanaIntermediateNode | undefined {
+        return this._currentNode;
+    }
+
+    public previousNode: TanaIntermediateNode | undefined;
+    public previousTokenType: string | undefined = "";
+
     public currentNodeLevel = 0;
     public nodeMap = new Map<number, TanaIntermediateNode>();
 

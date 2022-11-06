@@ -32,7 +32,8 @@ export class NotionDatabaseContext {
         records.forEach((record: Array<string>) => {
             pass++;
             if(pass === 1) {
-                this._headerRow.push(...record);
+                const trimmed = record.map(f => f.trim());
+                this._headerRow.push(...trimmed);
                 return;
             }
             this._db.push(record);
