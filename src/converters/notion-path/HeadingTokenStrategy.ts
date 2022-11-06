@@ -3,19 +3,13 @@ import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {idgenerator} from "../../utils/utils";
 import {marked} from "marked";
 import Heading = marked.Tokens.Heading;
+import {createNode} from "./utils";
 
 export class HeadingTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
 
         const token = this._token as Heading;
-        return new ConvertedNodeResponse({
-            name: `**${token.text}**`,
-            type: 'node',
-            uid: idgenerator(),
-            createdAt: 0,
-            editedAt: 0,
-            children: [],
-            refs: []
-        }, this._token);
+        return new ConvertedNodeResponse(createNode(`**${token.text}**`), this._token);
+        
     }
 }

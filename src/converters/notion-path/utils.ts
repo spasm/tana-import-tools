@@ -1,4 +1,4 @@
-import {TanaIntermediateAttribute, TanaIntermediateNode} from "../../types/types";
+import {NodeType, TanaIntermediateAttribute, TanaIntermediateNode} from "../../types/types";
 import {idgenerator} from "../../utils/utils";
 import {marked} from "marked";
 import Token = marked.Token;
@@ -8,11 +8,23 @@ export function createEmptyNode(): TanaIntermediateNode {
 }
 
 export function createNode(name: string): TanaIntermediateNode {
+    return createNodeOfType('node', name);
+}
+
+export function createCodeBlock(name: string): TanaIntermediateNode {
+    return createNodeOfType('codeblock', name);
+}
+
+export function createField(name: string): TanaIntermediateNode {
+    return createNodeOfType('field', name);
+}
+
+export function createNodeOfType(type: NodeType, name: string): TanaIntermediateNode {
     return {
         name: name,
-        createdAt: 0,
-        editedAt: 0,
-        type: 'node',
+        createdAt: new Date().getTime(),
+        editedAt: new Date().getTime(),
+        type: type,
         uid: idgenerator(),
         children: [],
         refs: []
@@ -27,17 +39,7 @@ export function createAttribute(name: string): TanaIntermediateAttribute {
     }
 }
 
-export function createField(name: string): TanaIntermediateNode {
-    return {
-        name: name,
-        createdAt: 0,
-        editedAt: 0,
-        type: 'field',
-        uid: idgenerator(),
-        children: [],
-        refs: []
-    };
-}
+
 
 export function debugPrint(what: any): void {
     console.log("====== DEBUG ======");

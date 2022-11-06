@@ -4,6 +4,7 @@ import {idgenerator} from "../../utils/utils";
 import Text = marked.Tokens.Text;
 import {marked} from "marked";
 import Token = marked.Token;
+import {createNode} from "./utils";
 
 export class TextTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
@@ -23,7 +24,7 @@ export class TextTokenStrategy extends BaseTokenStrategy {
                     text += `**${t.text}**`;
                     return;
                 case 'codespan':
-                    text += `^^${t.text}^^`;
+                    text += `\`${t.text}\``;
                     return;
                 case 'link':
                     text += `${t.raw}`;
@@ -34,14 +35,6 @@ export class TextTokenStrategy extends BaseTokenStrategy {
             }
         });
 
-        return new ConvertedNodeResponse({
-            name: text,
-            type: 'node',
-            uid: idgenerator(),
-            createdAt: 0,
-            editedAt: 0,
-            children: [],
-            refs: []
-        });
+        return new ConvertedNodeResponse(createNode(text), this._token);
     }
 }

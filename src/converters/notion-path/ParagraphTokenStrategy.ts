@@ -3,6 +3,7 @@ import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {idgenerator} from "../../utils/utils";
 import {marked} from "marked";
 import Paragraph = marked.Tokens.Paragraph;
+import {createNode} from "./utils";
 
 export class ParagraphTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
@@ -33,14 +34,7 @@ export class ParagraphTokenStrategy extends BaseTokenStrategy {
             }
         });
 
-        return new ConvertedNodeResponse({
-            name: para,
-            type: 'node',
-            uid: idgenerator(),
-            createdAt: 0,
-            editedAt: 0,
-            children: [],
-            refs: []
-        }, this._token);
+        return new ConvertedNodeResponse(createNode(para), this._token);
+
     }
 }
