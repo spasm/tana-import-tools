@@ -12,6 +12,7 @@ import {createNode, debugPrint} from "./utils";
 import {NotionDatabaseContext} from "./NotionDatabaseContext";
 import {NotionMarkdownItem} from "./NotionMarkdownItem";
 import {types} from "util";
+import os from "os";
 
 export class NotionPathConverter {
 
@@ -163,7 +164,7 @@ export class NotionPathConverter {
     }
 
     private performPostProcessing(tanaOutput: TanaIntermediateFile): void {
-        const nodeTypesToCount = ['node'];
+        const nodeTypesToCount = ['node', 'field'];
         const walkNodes = (nodes: Array<TanaIntermediateNode>, level:number = 0) => {
             level++;
             nodes.forEach(node => {
@@ -173,10 +174,10 @@ export class NotionPathConverter {
                 if(!nodeTypesToCount.includes(node.type)) {
                     return;
                 }
-                if(level === 1) {
+                if(level === 1 && node.type === 'node') {
                     tanaOutput.summary.topLevelNodes++;
                 }
-                if(level > 1) {
+                if(level > 1 && node.type === 'node') {
                     tanaOutput.summary.leafNodes++;
                 }
                 if(node.children){
@@ -196,11 +197,14 @@ export class NotionPathConverter {
         const internalExtensions = ['.csv', '.md'];
         let isInternal = false;
         const idLength = 32;
-        let totalLength = 0;
 
+        // fix internal markdown links first
         if(match) {
+            if(node.name.includes('.md')) { console.log(node.name); }
+
             const alias = match?.at(1);
             const url = match?.at(2);
+            let totalLength = 0;
 
             internalExtensions.forEach(ext => {
                 if(url?.endsWith(ext)) {
@@ -216,8 +220,34 @@ export class NotionPathConverter {
             if(item) {
                 const uid = item.tanaNodeRef?.uid;
                 if(!uid){ return;}
-                node.name = `[${alias}]([[${uid}]])`;
+                //node.name = `[${alias}]([[${uid}]])`;
+                node.name = node.name.replace(regex, `[${alias}]([[${uid}]])`)
                 node.refs?.push(uid);
+            }
+        } else {
+            // does the name end with .md?
+            if(!node.name.endsWith('.md')){ return; }
+
+            // if we're here, this is probably a field with one or more md files
+            // split!
+            const files = node.name.split(',');
+            const totalLength = idLength + 3;
+            let tempNodeName = "";
+            const tempNodeRefs = new Array<string>;
+            files.forEach(file => {
+                const id = file.substring(file.length - totalLength, file.length - 3);
+                const item = this.tracking.get(id);
+                if(item) {
+                    const uid = item.tanaNodeRef?.uid;
+                    if(!uid){ return;}
+                    tempNodeName += `[${item.tanaNodeRef?.name}]([[${uid}]])${os.EOL}`;
+                    tempNodeRefs.push(uid);
+                }
+            });
+
+            if(tempNodeName !== "") {
+                node.name = tempNodeName.trim();
+                node.refs?.push(...tempNodeRefs);
             }
         }
     }
