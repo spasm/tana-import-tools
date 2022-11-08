@@ -42,32 +42,31 @@ export class NotionMarkdownConverter{
             const convertedNode = new MarkdownTokenConverter(token).getConverter()?.convert();
             let targetNode = this._context.currentNode;
 
-            if(convertedNode){
+            if(!convertedNode) { return; }
 
-                // skip spaces
-                if(convertedNode.token?.type === 'space') { return; }
+            // skip spaces
+            if(convertedNode.token?.type === 'space') { return; }
 
-                // headings have special rules since they drive structure
-                if(convertedNode.token?.type === 'heading') {
-                    this.attachHeading(convertedNode);
-                    this._context.previousNode = convertedNode?.lastNode();
-                    this._context.previousTokenType = convertedNode?.token?.type;
-                    return;
-                }
-
-                // a new list, or codeblock, and we'll nest it under the previous node
-                // sometimes this is the right thing to do, sometimes not
-                if((convertedNode.token?.type === 'list' || convertedNode.token?.type === 'code') &&
-                    this._context.previousTokenType === 'paragraph' || this._context.previousTokenType === 'heading') {
-                    targetNode = this._context.previousNode;
-                }
-
-                // everything else, generic attachment
-                if(targetNode){
-                    this.attach(convertedNode, targetNode);
-                }
+            // headings have special rules since they drive structure
+            if(convertedNode.token?.type === 'heading') {
+                this.attachHeading(convertedNode);
+                this._context.previousNode = convertedNode?.lastNode();
+                this._context.previousTokenType = convertedNode?.token?.type;
+                return;
             }
 
+            // a new list, or codeblock, and we'll nest it under the previous node
+            // sometimes this is the right thing to do, sometimes not
+            if((convertedNode.token?.type === 'list' || convertedNode.token?.type === 'code') &&
+                this._context.previousTokenType === 'paragraph' || this._context.previousTokenType === 'heading') {
+                targetNode = this._context.previousNode;
+            }
+
+            // everything else, generic attachment
+            if(targetNode){
+                this.attach(convertedNode, targetNode);
+            }
+            
             this._context.previousNode = convertedNode?.lastNode();
             this._context.previousTokenType = convertedNode?.token?.type;
         });

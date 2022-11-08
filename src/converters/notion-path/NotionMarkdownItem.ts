@@ -126,5 +126,32 @@ export class NotionMarkdownItem extends NotionExportItem {
         if(tempBody !== "") {
             this._body = tempBody;
         }
+
+        // Post-processing for fields
+        this.fieldPostProcessing();
+    }
+
+    // Notion doesn't export all fields into the markdown file
+    // Go through our headers and see if we can find which fields
+    // aren't in the markdown, and add them
+    private fieldPostProcessing(): void {
+
+        // this is kind of lazy for now, just get the first row
+        const relatedRecord = this.parentDatabase?.getRowsByCellText(this.title)?.at(0);
+
+        // we can expand this routine to compare some of the fields we
+        // parsed out of the markdown file, with what's in the CSV
+        this.parentDatabase?.headerRow.forEach((field, index) => {
+            if(!this._fields.map(x => x.name).includes(field)){
+                // if we don't find one of the headerRow fields in the
+                // fields we parsed out of the MD file, we need to take a look at it
+                let fieldValue = "";
+                if(relatedRecord){
+                    fieldValue = relatedRecord[index];
+                    if(fieldValue === this.title) { return ;} // this is our node title
+                }
+                this.fields.push({name: field, body:fieldValue});
+            }
+        })
     }
 }
