@@ -1,11 +1,11 @@
-import {TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSummary} from "../../types/types";
+import {TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSummary} from "../../../types/types";
 import {marked} from "marked";
-import {createAttribute, createEmptyNode, createField, createNode, debugPrint} from "./utils";
+import {createAttribute, createEmptyNode, createField, createNode, debugPrint} from "../utils";
 import {MarkdownTokenConverter} from "./MarkdownTokenConverter";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {ConverterContext} from "./ConverterContext";
 import Heading = marked.Tokens.Heading;
-import {NotionMarkdownItem} from "./NotionMarkdownItem";
+import {NotionMarkdownItem} from "../notion-core/NotionMarkdownItem";
 
 export class NotionMarkdownConverter{
 
@@ -66,7 +66,7 @@ export class NotionMarkdownConverter{
             if(targetNode){
                 this.attach(convertedNode, targetNode);
             }
-            
+
             this._context.previousNode = convertedNode?.lastNode();
             this._context.previousTokenType = convertedNode?.token?.type;
         });

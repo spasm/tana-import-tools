@@ -1,9 +1,9 @@
 import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
-import {idgenerator} from "../../utils/utils";
+import {idgenerator} from "../../../utils/utils";
 import {marked} from "marked";
 import Paragraph = marked.Tokens.Paragraph;
-import {createNode} from "./utils";
+import {createNode} from "../utils";
 
 export class ParagraphTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {

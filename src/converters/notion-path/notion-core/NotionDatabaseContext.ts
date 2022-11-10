@@ -1,7 +1,7 @@
 import {ExportItemType, NotionExportItem} from "./NotionExportItem";
 import {parse} from "csv-parse/sync";
 import fs from "fs";
-import {debugPrint} from "./utils";
+import {debugPrint} from "../utils";
 
 export type NotionDbRecords = Array<Array<string>>;
 

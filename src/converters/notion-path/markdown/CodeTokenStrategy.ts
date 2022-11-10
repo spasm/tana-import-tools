@@ -2,7 +2,7 @@ import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {marked} from "marked";
 import Code = marked.Tokens.Code;
-import {createCodeBlock} from "./utils";
+import {createCodeBlock} from "../utils";
 
 export class CodeTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {

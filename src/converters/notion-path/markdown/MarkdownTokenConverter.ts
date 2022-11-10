@@ -1,5 +1,5 @@
 import {marked} from "marked";
-import {debugPrint} from "./utils";
+import {debugPrint} from "../utils";
 import {ITokenStrategy} from "./BaseTokenStrategy";
 import {SpaceTokenStrategy} from "./SpaceTokenStrategy";
 import {HeadingTokenStrategy} from "./HeadingTokenStrategy";

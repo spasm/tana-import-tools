@@ -1,6 +1,6 @@
 import path, {ParsedPath} from "path";
 import fs from "fs";
-import {TanaIntermediateNode} from "../../types/types";
+import {TanaIntermediateNode} from "../../../types/types";
 import {NotionDatabaseContext} from "./NotionDatabaseContext";
 
 export enum ExportItemType {

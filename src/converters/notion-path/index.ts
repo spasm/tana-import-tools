@@ -4,13 +4,13 @@ import {
     TanaIntermediateNode,
     TanaIntermediateSummary
 } from "../../types/types";
-import {ExportItemType, NotionExportItem} from "./NotionExportItem";
+import {ExportItemType, NotionExportItem} from "./notion-core/NotionExportItem";
 import fs from "fs";
 import path from "path";
-import {NotionMarkdownConverter} from "./NotionMarkdownConverter";
+import {NotionMarkdownConverter} from "./markdown/NotionMarkdownConverter";
 import {createNode, debugPrint} from "./utils";
-import {NotionDatabaseContext} from "./NotionDatabaseContext";
-import {NotionMarkdownItem} from "./NotionMarkdownItem";
+import {NotionDatabaseContext} from "./notion-core/NotionDatabaseContext";
+import {NotionMarkdownItem} from "./notion-core/NotionMarkdownItem";
 import {types} from "util";
 import os from "os";
 
@@ -24,8 +24,6 @@ export class NotionPathConverter {
     private filesToSkip = ['.DS_Store'];
 
     public convertPath(fullPath: string): TanaIntermediateFile | undefined{
-
-        const attrMap: Map<string, TanaIntermediateAttribute> = new Map();
 
         const tanaOutput: TanaIntermediateFile = {
             version: 'TanaIntermediateFile V0.1',
@@ -87,7 +85,7 @@ export class NotionPathConverter {
                     // This means that the directory that we've landed on is the directory of
                     // contents for a page.  This might be images, this might be a database
                     // in the case of a database, once we go into this directory there's probably another
-                    // directory, and a companion CSV for us to know to inspect the database
+                    // directory, and a companion CSV for us to then inspect the database
                     const nextItem = new NotionExportItem(item.fullPath + ".md", dbContext);
                     const processedNextItem = this.processMarkdownItem(nextItem);
 
@@ -165,7 +163,7 @@ export class NotionPathConverter {
 
     private performPostProcessing(tanaOutput: TanaIntermediateFile): void {
         const nodeTypesToCount = ['node', 'field'];
-        const walkNodes = (nodes: Array<TanaIntermediateNode>, level:number = 0) => {
+        const walkNodes = (nodes: Array<TanaIntermediateNode>, level: number = 0) => {
             level++;
             nodes.forEach(node => {
 

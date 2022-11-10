@@ -1,4 +1,4 @@
-import {TanaIntermediateNode} from "../../types/types";
+import {TanaIntermediateNode} from "../../../types/types";
 import {marked} from "marked";
 import Token = marked.Token;
 
