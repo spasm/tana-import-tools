@@ -78,7 +78,7 @@ export class NotionMarkdownItem extends NotionExportItem {
             // a field can wrap to many lines, so we have to keep track of
             const mdField = this.parseField(line);
 
-            if(!mdField) {
+            if(!mdField || !isDbField(mdField)) {
                 this._body += line + os.EOL;
                 return;
             }
@@ -178,21 +178,17 @@ export class NotionMarkdownItem extends NotionExportItem {
 
         records?.forEach(r => {
             const dbFieldBody = r[index];
-            console.log(`Comparing ${dbFieldBody} ---> ${field.body}`);
             if(dbFieldBody === field.body) {
                 // return original body if all matches up
-                console.log(`Match!`);
                 enrichedField = { name: field.name, body: field.body };
                 return;
             }
 
-            console.log(`Non-match!`);
             // if it's a non match, perhaps it's because there are newlines
             // we want to split it up, and compare just the first lines
             const splitBody = dbFieldBody.split(/\r\n|\r|\n/);
             if(splitBody?.length > 0) {
                 if(splitBody[0] === field.body) {
-                    console.log('Deep Match!')
                     enrichedField = { name: field.name, body: dbFieldBody };
                     return;
                 }
