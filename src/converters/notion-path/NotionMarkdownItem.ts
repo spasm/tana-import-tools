@@ -1,13 +1,11 @@
 import {NotionExportItem} from "./NotionExportItem";
-import {NotionDatabaseContext} from "./NotionDatabaseContext";
+import {NotionDatabaseContext, NotionDbRecords} from "./NotionDatabaseContext";
 import os from "os";
 
 export type NotionMarkdownField = {
     name: string,
     body: string
 }
-
-export type NotionDbRecords = Array<Array<string>>;
 
 export class NotionMarkdownItem extends NotionExportItem {
 
@@ -43,7 +41,6 @@ export class NotionMarkdownItem extends NotionExportItem {
         let pass = 0;
         let fastForwardToPass = 0;
         let inBodyContext = false;
-        let inFieldContext = false;
         let relatedRecords: NotionDbRecords;
 
         const isDbField = (field: NotionMarkdownField | undefined) => {
@@ -79,16 +76,15 @@ export class NotionMarkdownItem extends NotionExportItem {
 
             // the format of a field, however
             // a field can wrap to many lines, so we have to keep track of
-            let mdField = this.parseField(line);
+            const mdField = this.parseField(line);
 
             if(!mdField) {
                 this._body += line + os.EOL;
                 return;
             }
 
-            // if we're on the third line and it's not a field, then just collect the rest as body
+            // if we're on the third line, and it's not a field, then just collect the rest as body
             if(pass === 3 && !isDbField(mdField)) {
-                inFieldContext = false;
                 inBodyContext = true;
                 this._body += line + os.EOL;
                 return;
@@ -96,12 +92,9 @@ export class NotionMarkdownItem extends NotionExportItem {
 
             // Get our field from the database so that we can inspect it
             const dbField = this.enrichFieldFromRecords(mdField!, relatedRecords); // we won't get here if field is undefined
-            console.log("dbField: " + JSON.stringify(dbField));
 
             // from here on forward, process as potential fields
             if(pass >= 3 && isDbField(mdField)) {
-
-                inFieldContext = true;
 
                 if(dbField) {
                     // do we have an enriched field?  let's refine further
@@ -129,40 +122,9 @@ export class NotionMarkdownItem extends NotionExportItem {
                 }
             }
 
-            // // here we've already found at least one field, and we're past the third line
-            // if(pass > 3 && inFieldContext) {
-            //     if(isDbField(mdField)) {
-            //
-            //         // first, have we been collecting from a field newline?
-            //         if(tempBody !== "") {
-            //             // yes, save this off into our previous field array entry
-            //             const index = this._fields.length - 1;
-            //             this._fields[index].body = this._fields[index].body + os.EOL + tempBody;
-            //             tempBody = "";
-            //         }
-            //
-            //         this._fields.push(mdField!);
-            //         return;
-            //     } else {
-            //         // this isn't a valid field, but it might be one of two things
-            //         // 1. A new line entry in a field text entry
-            //         // 2. The start of the body
-            //         // Let's save this off until we know for sure
-            //         tempBody += line + os.EOL;
-            //         return;
-            //     }
-            // }
-
             // if we get here, just add it to the body
             this._body += line + os.EOL;
         });
-
-        // if we're here with a tempBody still, it's probably just the body
-        // it could also be the last "field" in the file with multi-line text
-        // edge case for us to consider handling later
-        // if(tempBody !== "") {
-        //     this._body = tempBody;
-        // }
 
         // Post-processing for fields
         this.postProcessFields();
@@ -208,8 +170,6 @@ export class NotionMarkdownItem extends NotionExportItem {
         const index = this.parentDatabase?.headerRow.findIndex((f, idx) => f === field.name);
 
         if(index === undefined || index < 0) {
-            // TODO: we can't go any further here without an index
-            // log something out here so we can debug
             console.error(`field: ${field.name} not found in enrichFieldFromDatabase: ${JSON.stringify(this.parentDatabase?.headerRow)}`);
             return;
         }

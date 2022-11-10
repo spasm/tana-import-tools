@@ -3,6 +3,8 @@ import {parse} from "csv-parse/sync";
 import fs from "fs";
 import {debugPrint} from "./utils";
 
+export type NotionDbRecords = Array<Array<string>>;
+
 export class NotionDatabaseContext {
 
     private _item: NotionExportItem;
@@ -41,7 +43,6 @@ export class NotionDatabaseContext {
     }
 
     public getRowsByCellText(text: string): Array<Array<string>> {
-        console.log(`Getting rows for cell text ${text}`);
 
         const resultingRows = new Array<Array<string>>();
         this._db.forEach(row => {
@@ -52,7 +53,6 @@ export class NotionDatabaseContext {
            })
         });
 
-        console.log(`Found ${resultingRows.length} rows.`);
         return resultingRows;
     }
 }

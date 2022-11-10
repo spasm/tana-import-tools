@@ -39,8 +39,6 @@ export function createAttribute(name: string): TanaIntermediateAttribute {
     }
 }
 
-
-
 export function debugPrint(what: any): void {
     console.log("====== DEBUG ======");
     console.log(what);
