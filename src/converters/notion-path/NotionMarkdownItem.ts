@@ -7,6 +7,8 @@ export type NotionMarkdownField = {
     body: string
 }
 
+export type NotionDbRecords = Array<Array<string>>;
+
 export class NotionMarkdownItem extends NotionExportItem {
 
     private _title = "";
@@ -27,6 +29,7 @@ export class NotionMarkdownItem extends NotionExportItem {
 
     constructor(fullPath: string, parentDatabase: NotionDatabaseContext | undefined = undefined) {
         super(fullPath, parentDatabase);
+
         this.initialize();
     }
 
@@ -38,28 +41,24 @@ export class NotionMarkdownItem extends NotionExportItem {
         }
 
         let pass = 0;
+        let fastForwardToPass = 0;
         let inBodyContext = false;
         let inFieldContext = false;
-        let tempBody = "";
+        let relatedRecords: NotionDbRecords;
 
         const isDbField = (field: NotionMarkdownField | undefined) => {
             if(!field){ return; }
             return this.parentDatabase?.headerRow.includes(field.name);
         }
 
-        const parseField = (line: string): NotionMarkdownField | undefined => {
-            const field = line.substring(0, line.indexOf(':', 0));
-            if(field) {
-                const fieldBody = line.substring(line.indexOf(':',0) + 1, line.length)
-                return {
-                    name: field.trim(),
-                    body: fieldBody.trim()
-                };
-            }
-        }
-
         contents.split(/\r?\n/).forEach(line => {
             pass++;
+
+            if(pass < fastForwardToPass) {
+                console.log(`pass: ${pass} being fast forwarded`);
+                return;
+            }
+
             // if we're in a body context, just continue to rebuild our content body
             if(inBodyContext) {
                 this._body += line + os.EOL;
@@ -69,52 +68,90 @@ export class NotionMarkdownItem extends NotionExportItem {
             // if it's the first line, and starts with #, this is our primary header
             if(pass === 1 && line.startsWith('#', 0)) {
                 this._title = line.substring(1, line.length).trim();
+
+                // now that we have our title, let's resolve related records
+                if(this.parentDatabase) {
+                    relatedRecords = this.parentDatabase.getRowsByCellText(this._title);
+                }
+
                 return;
             }
 
             // the format of a field, however
             // a field can wrap to many lines, so we have to keep track of
-            // const field = line.substring(0, line.indexOf(':', 0));
-            const field = parseField(line);
+            let mdField = this.parseField(line);
+
+            if(!mdField) {
+                this._body += line + os.EOL;
+                return;
+            }
 
             // if we're on the third line and it's not a field, then just collect the rest as body
-            if(pass === 3 && !isDbField(field)) {
+            if(pass === 3 && !isDbField(mdField)) {
                 inFieldContext = false;
                 inBodyContext = true;
                 this._body += line + os.EOL;
                 return;
             }
 
-            // our very first field, pretty straight forward
-            if(pass === 3 && isDbField(field)) {
+            // Get our field from the database so that we can inspect it
+            const dbField = this.enrichFieldFromRecords(mdField!, relatedRecords); // we won't get here if field is undefined
+            console.log("dbField: " + JSON.stringify(dbField));
+
+            // from here on forward, process as potential fields
+            if(pass >= 3 && isDbField(mdField)) {
+
                 inFieldContext = true;
-                this._fields.push(field!);
-                return;
-            }
 
-            // here we've already found at least one field, and we're past the third line
-            if(pass > 3 && inFieldContext) {
-                if(isDbField(field)) {
-
-                    // first, have we been collecting from a field newline?
-                    if(tempBody !== "") {
-                        // yes, save this off into our previous field array entry
-                        const index = this._fields.length - 1;
-                        this._fields[index].body = this._fields[index].body + os.EOL + tempBody;
-                        tempBody = "";
+                if(dbField) {
+                    // do we have an enriched field?  let's refine further
+                    const dbFieldSplit = dbField?.body.split(/\r\n|\r|\n/);
+                    // if we don't have any new line characters, just add to our fields
+                    // and return.
+                    if(dbFieldSplit?.length === 1){
+                        this._fields.push(mdField!);
+                        return;
                     }
 
-                    this._fields.push(field!);
-                    return;
-                } else {
-                    // this isn't a valid field, but it might be one of two things
-                    // 1. A new line entry in a field text entry
-                    // 2. The start of the body
-                    // Let's save this off until we know for sure
-                    tempBody += line + os.EOL;
+                    // if we have more than 1 line, then we have newline characters to account for
+                    if(dbFieldSplit?.length > 1){
+                        // does the first line of our CSV field match what we parsed
+                        // from the markdown file?
+                            this._fields.push({name: dbField.name, body: dbField.body });
+                            fastForwardToPass = pass + dbFieldSplit.length;
+                            console.log(`fast forwarding to ${fastForwardToPass}`);
+                            return;
+
+                    }
+                } else { // no dbfield but we have an md field?
+                    this._fields.push(mdField!)
                     return;
                 }
             }
+
+            // // here we've already found at least one field, and we're past the third line
+            // if(pass > 3 && inFieldContext) {
+            //     if(isDbField(mdField)) {
+            //
+            //         // first, have we been collecting from a field newline?
+            //         if(tempBody !== "") {
+            //             // yes, save this off into our previous field array entry
+            //             const index = this._fields.length - 1;
+            //             this._fields[index].body = this._fields[index].body + os.EOL + tempBody;
+            //             tempBody = "";
+            //         }
+            //
+            //         this._fields.push(mdField!);
+            //         return;
+            //     } else {
+            //         // this isn't a valid field, but it might be one of two things
+            //         // 1. A new line entry in a field text entry
+            //         // 2. The start of the body
+            //         // Let's save this off until we know for sure
+            //         tempBody += line + os.EOL;
+            //         return;
+            //     }
+            // }
 
             // if we get here, just add it to the body
             this._body += line + os.EOL;
@@ -123,18 +160,29 @@ export class NotionMarkdownItem extends NotionExportItem {
         // if we're here with a tempBody still, it's probably just the body
         // it could also be the last "field" in the file with multi-line text
         // edge case for us to consider handling later
-        if(tempBody !== "") {
-            this._body = tempBody;
-        }
+        // if(tempBody !== "") {
+        //     this._body = tempBody;
+        // }
 
         // Post-processing for fields
-        this.fieldPostProcessing();
+        this.postProcessFields();
+    }
+
+    private parseField(line: string): NotionMarkdownField | undefined {
+        const field = line.substring(0, line.indexOf(':', 0));
+        if(field) {
+            const fieldBody = line.substring(line.indexOf(':',0) + 1, line.length)
+            return {
+                name: field.trim(),
+                body: fieldBody.trim()
+            };
+        }
     }
 
     // Notion doesn't export all fields into the markdown file
     // Go through our headers and see if we can find which fields
     // aren't in the markdown, and add them
-    private fieldPostProcessing(): void {
+    private postProcessFields(): void {
 
         // this is kind of lazy for now, just get the first row
         const relatedRecord = this.parentDatabase?.getRowsByCellText(this.title)?.at(0);
@@ -153,5 +201,44 @@ export class NotionMarkdownItem extends NotionExportItem {
                 this.fields.push({name: field, body:fieldValue});
             }
         })
+    }
+
+    private enrichFieldFromRecords(field: NotionMarkdownField, records: NotionDbRecords): NotionMarkdownField | undefined {
+        // first, get the index of the field from the headers
+        const index = this.parentDatabase?.headerRow.findIndex((f, idx) => f === field.name);
+
+        if(index === undefined || index < 0) {
+            // TODO: we can't go any further here without an index
+            // log something out here so we can debug
+            console.error(`field: ${field.name} not found in enrichFieldFromDatabase: ${JSON.stringify(this.parentDatabase?.headerRow)}`);
+            return;
+        }
+
+        let enrichedField: NotionMarkdownField | undefined;
+
+        records?.forEach(r => {
+            const dbFieldBody = r[index];
+            console.log(`Comparing ${dbFieldBody} ---> ${field.body}`);
+            if(dbFieldBody === field.body) {
+                // return original body if all matches up
+                console.log(`Match!`);
+                enrichedField = { name: field.name, body: field.body };
+                return;
+            }
+
+            console.log(`Non-match!`);
+            // if it's a non match, perhaps it's because there are newlines
+            // we want to split it up, and compare just the first lines
+            const splitBody = dbFieldBody.split(/\r\n|\r|\n/);
+            if(splitBody?.length > 0) {
+                if(splitBody[0] === field.body) {
+                    console.log('Deep Match!')
+                    enrichedField = { name: field.name, body: dbFieldBody };
+                    return;
+                }
+            }
+        })
+
+        return enrichedField;
     }
 }

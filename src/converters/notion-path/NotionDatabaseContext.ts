@@ -41,6 +41,8 @@ export class NotionDatabaseContext {
     }
 
     public getRowsByCellText(text: string): Array<Array<string>> {
+        console.log(`Getting rows for cell text ${text}`);
+
         const resultingRows = new Array<Array<string>>();
         this._db.forEach(row => {
            row.forEach(field => {
@@ -49,6 +51,8 @@ export class NotionDatabaseContext {
                }
            })
         });
+
+        console.log(`Found ${resultingRows.length} rows.`);
         return resultingRows;
     }
 }
