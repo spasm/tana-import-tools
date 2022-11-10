@@ -1,6 +1,5 @@
 import {TanaIntermediateNode} from "../../types/types";
 import {debugPrint} from "./utils";
-import {NotionExportItem} from "./NotionExportItem";
 
 export class ConverterContext {
 
