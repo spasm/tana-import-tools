@@ -10,6 +10,7 @@ import List = marked.Tokens.List;
 import {HeadingTokenStrategy} from "./HeadingTokenStrategy";
 import {ParagraphTokenStrategy} from "./ParagraphTokenStrategy";
 import {CodeTokenStrategy} from "./CodeTokenStrategy";
+import {SpaceTokenStrategy} from "./SpaceTokenStrategy";
 
 export class ListTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
@@ -74,6 +75,10 @@ export class ListTokenStrategy extends BaseTokenStrategy {
                 }
                 case "code": {
                     newNode = new CodeTokenStrategy(t).convert().firstNode();
+                    break;
+                }
+                case "space": {
+                    newNode = new SpaceTokenStrategy(t).convert().firstNode();
                     break;
                 }
                 default: {
