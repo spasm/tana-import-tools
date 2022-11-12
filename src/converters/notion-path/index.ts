@@ -8,11 +8,12 @@ import {ExportItemType, NotionExportItem} from "./notion-core/NotionExportItem";
 import fs from "fs";
 import path from "path";
 import {NotionMarkdownConverter} from "./markdown/NotionMarkdownConverter";
-import {createNode, debugPrint} from "./utils";
+import {createNode, debugPrint, generateIdFromInternalImage} from "./utils";
 import {NotionDatabaseContext} from "./notion-core/NotionDatabaseContext";
 import {NotionMarkdownItem} from "./notion-core/NotionMarkdownItem";
 import {types} from "util";
 import os from "os";
+import urlJoin from "url-join";
 
 export class NotionPathConverter {
 
@@ -20,10 +21,13 @@ export class NotionPathConverter {
     private summary: TanaIntermediateSummary = { brokenRefs: 0, calendarNodes: 0, fields: 0,
         leafNodes: 0, topLevelNodes: 0, totalNodes: 0};
     private _attributes = new Array<TanaIntermediateAttribute>();
+    private _rootPath = "";
+    private _uploadPath = "https://spasm.github.io/tana-images/";
 
     private filesToSkip = ['.DS_Store'];
 
     public convertPath(fullPath: string): TanaIntermediateFile | undefined{
+        this._rootPath = fullPath;
 
         const tanaOutput: TanaIntermediateFile = {
             version: 'TanaIntermediateFile V0.1',
@@ -62,6 +66,18 @@ export class NotionPathConverter {
                     return;
                 }
                 nodes.push(processedItem.tanaNodeRef);
+                this.track(item);
+            }
+
+            if(item?.isImageItem()) {
+                const imagePath = `${this._rootPath}-images`;
+                if(!fs.existsSync(imagePath)) {
+                    fs.mkdirSync(imagePath);
+                }
+                // save a copy off to an export directory?
+                const targetFile = path.join(imagePath, item.id);
+                fs.copyFileSync(item.fullPath, targetFile);
+                console.log(`name: ${item.name}, id:${item.id}`);
                 this.track(item);
             }
 
@@ -190,34 +206,56 @@ export class NotionPathConverter {
     }
 
     private fixLinkReferences(node: TanaIntermediateNode): void {
-        const regex = /\[([^\]]+)\]\(([^\)]+)\)/;
-        const match = node.name.match(regex);
-        const internalExtensions = ['.csv', '.md'];
-        let isInternal = false;
+        const mdLinkRegex = /\[([^\]]+)\]\(([^\)]+)\)/;
+        const internalExtRegex = /\.(gif|jpe?g|tiff?|png|webp|bmp|md|csv)$/i;
+        const httpRegex = /^https?:\/\//;
         const idLength = 32;
 
-        // fix internal markdown links first
-        if(match) {
-            const alias = match?.at(1);
-            const url = match?.at(2);
-            let totalLength = 0;
+        // matches the common MD link format -- e.g. []() or ![]()
+        const mdLinkMatch = node.name.match(mdLinkRegex);
+        if(mdLinkMatch) {
+            const alias = mdLinkMatch?.at(1);
+            const url = mdLinkMatch?.at(2);
+            const extensionMatch = url?.match(internalExtRegex);
+            const httpMatch = url?.match(httpRegex);
 
-            internalExtensions.forEach(ext => {
-                if(url?.endsWith(ext)) {
-                    isInternal = true;
-                    totalLength = idLength + ext.length
+            if(!extensionMatch || !url){ return; } // do nothing, leave the link as is
+            // TODO: we should probably log something out, or capture something here
+
+            if(node.name.startsWith('![')) {
+                // is an image link
+                if(!httpMatch) {
+                    // no http/s match, so let's assume it's an image link to a file on disk
+                    // we'll need to inspect the URL, split it and extract the id and name
+                    // look up the image
+                    const imageId = generateIdFromInternalImage(decodeURI(url));
+                    const notionItem = this.tracking.get(imageId);
+                    if(notionItem) {
+                        node.name = alias ?? url;
+                        node.mediaUrl = urlJoin(this._uploadPath, encodeURI(notionItem.id));
+                        node.type = 'image';
+                    }
+
+                } else {
+                    // is an http/s match, so let's just convert to an image node and move on
+                    node.name = alias ?? url;
+                    node.mediaUrl = url;
+                    node.type = 'image';
                 }
-            });
+                // bail early, we did what we needed to do
+                return;
+            }
 
-            if(!isInternal || !url){ return; } // do nothing, leave the link as is
-
+            // process this like a normal internal file
+            const totalLength = idLength + extensionMatch[0]?.length;
             const id = url.substring(url.length - totalLength, url.length - (totalLength - idLength));
             const item = this.tracking.get(id);
+
             if(item) {
                 const uid = item.tanaNodeRef?.uid;
                 if(!uid){ return;}
-                //node.name = `[${alias}]([[${uid}]])`;
-                node.name = node.name.replace(regex, `[${alias}]([[${uid}]])`)
+
+                node.name = node.name.replace(mdLinkRegex, `[${alias}]([[${uid}]])`)
                 node.refs?.push(uid);
             }
         } else {

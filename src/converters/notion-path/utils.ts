@@ -53,3 +53,11 @@ export function debugPrintIf(token: Token, phrase: string): void {
         console.log("====== DEBUG ======")
     }
 }
+
+export function generateIdFromInternalImage(name: string): string {
+    const splitPath = name.split('/');
+    const imageName = splitPath[splitPath.length-1];
+    const parentName = splitPath[splitPath.length-2];
+    const id = parentName.substring(parentName.length - 32, parentName.length).trim();
+    return id + "-" + imageName;
+}
