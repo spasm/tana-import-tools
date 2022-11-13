@@ -17,6 +17,10 @@ switch (configAction) {
         getProp();
         break;
     }
+    case 'getall': {
+        getAllProps();
+        break;
+    }
     case 'list': {
         listProps();
         break;
@@ -24,6 +28,13 @@ switch (configAction) {
     default: {
         throw Error(`Invalid action, must be either 'set', 'get', or 'list'.`);
     }
+}
+
+function getAllProps() {
+    console.log(`Listing all set properties and their values:`);
+    properties.forEach(prop => {
+       console.log(`Property: ${prop}, Value: ${config.get(prop)}`);
+    });
 }
 
 function listProps() {
@@ -49,7 +60,7 @@ function setProp() {
     if(!isValidProperty(configEntry)) { throw Error(`Property ${configEntry} not valid.`); }
     if(!config.has(configEntry)) { console.log(`Property ${configEntry} not set.`); }
 
-    console.log(`Property ${configEntry}'s value: ${config.get(configEntry)}`);
+    console.log(`Property: ${configEntry}, Value: ${config.get(configEntry)}`);
  }
 
  function isValidProperty(name: string) {
