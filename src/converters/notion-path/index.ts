@@ -226,14 +226,17 @@ export class NotionPathConverter {
     }
 
     private fixLinkReferences(node: TanaIntermediateNode): void {
-        const mdLinkRegex = /\[([^\]]+)\]\(([^\)]+)\)/;
+        const mdLinkRegex = /\[([^\]]+)\]\(([^\)\[]+)\)/;
+        const mdLinkRegexGlobal = /\[([^\]]+)\]\(([^\)]+)\)/g;
         const internalExtRegex = /\.(gif|jpe?g|tiff?|png|webp|bmp|md|csv)$/i;
         const httpRegex = /^https?:\/\//;
         const idLength = 32;
 
-        // matches the common MD link format -- e.g. []() or ![]()
-        const mdLinkMatch = node.name.match(mdLinkRegex);
-        if(mdLinkMatch) {
+        // Matches the common MD link format -- e.g. []() or ![]()
+        // Matches all instances of them, and then we iterate through them
+        const mdLinkMatches = node.name.matchAll(mdLinkRegexGlobal);
+
+        for (const mdLinkMatch of mdLinkMatches) {
             const alias = mdLinkMatch?.at(1);
             const url = mdLinkMatch?.at(2);
             const extensionMatch = url?.match(internalExtRegex);
@@ -280,8 +283,13 @@ export class NotionPathConverter {
                 node.name = node.name.replace(mdLinkRegex, `[${alias}]([[${uid}]])`)
                 node.refs?.push(uid);
             }
-        } else {
-            // does the name end with .md?
+        }
+
+        // TODO: consider adding a check for a node of type 'field' here, since fields
+        // seem to be the only area where Notion doesn't use a full MD link to indicate
+        // a link out to a file
+        if(Array.from(mdLinkMatches).length === 0) {
+            // if we didn't have any md links, doesn't mean we don't have files to still resolve
             if(!node.name.endsWith('.md')){ return; }
 
             // if we're here, this is probably a field with one or more md files
