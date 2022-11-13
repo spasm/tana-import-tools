@@ -2,13 +2,20 @@ import {
     TanaIntermediateAttribute,
     TanaIntermediateFile,
     TanaIntermediateNode,
-    TanaIntermediateSummary
+    TanaIntermediateSummary, TanaIntermediateSupertag
 } from "../../types/types";
 import {ExportItemType, NotionExportItem} from "./notion-core/NotionExportItem";
 import fs from "fs";
 import path from "path";
 import {NotionMarkdownConverter} from "./markdown/NotionMarkdownConverter";
-import {createNode, debugPrint, generateIdFromInternalImage} from "./utils";
+import {
+    createAttribute,
+    createField, createImageDescriptionField,
+    createNode,
+    createSupertag,
+    debugPrint,
+    generateIdFromInternalImage
+} from "./utils";
 import {NotionDatabaseContext} from "./notion-core/NotionDatabaseContext";
 import {NotionMarkdownItem} from "./notion-core/NotionMarkdownItem";
 import {types} from "util";
@@ -21,6 +28,8 @@ export class NotionPathConverter {
     private summary: TanaIntermediateSummary = { brokenRefs: 0, calendarNodes: 0, fields: 0,
         leafNodes: 0, topLevelNodes: 0, totalNodes: 0};
     private _attributes = new Array<TanaIntermediateAttribute>();
+    private _supertags = new Array<TanaIntermediateSupertag>();
+
     private _rootPath = "";
     private _uploadPath = "https://spasm.github.io/tana-images/";
 
@@ -33,9 +42,12 @@ export class NotionPathConverter {
             version: 'TanaIntermediateFile V0.1',
             summary: this.summary,
             nodes: [],
-            attributes: this._attributes
+            attributes: this._attributes,
+            supertags: this._supertags
         };
 
+        this.initSupertags();
+        this.initDefaultFields();
         this.walkPath(fullPath, tanaOutput.nodes);
         this.performPostProcessing(tanaOutput);
         return tanaOutput;
@@ -179,7 +191,7 @@ export class NotionPathConverter {
 
     private performPostProcessing(tanaOutput: TanaIntermediateFile): void {
         const nodeTypesToCount = ['node', 'field'];
-        const walkNodes = (nodes: Array<TanaIntermediateNode>, level: number = 0) => {
+        const walkNodes = (nodes: Array<TanaIntermediateNode>, level = 0) => {
             level++;
             nodes.forEach(node => {
 
@@ -234,6 +246,8 @@ export class NotionPathConverter {
                         node.name = alias ?? url;
                         node.mediaUrl = urlJoin(this._uploadPath, encodeURI(notionItem.id));
                         node.type = 'image';
+                        node.supertags?.push(this.imageSupertagId);
+                        node.children?.push(createImageDescriptionField(`${alias ?? url}`));
                     }
 
                 } else {
@@ -284,5 +298,22 @@ export class NotionPathConverter {
                 node.refs?.push(...tempNodeRefs);
             }
         }
+    }
+
+    private get imageSupertagId(): string {
+        return this._supertags.find(f => f.name === `image`)!.uid;
+    }
+
+    private initDefaultFields() {
+        this._attributes.push(createAttribute(`Image Description`));
+    }
+
+    private initSupertags() {
+        this._supertags.push(createSupertag(`image`));
+        this._supertags.push(createSupertag(`notion-page`));
+        this._supertags.push(createSupertag(`notion-pagelink`));
+        this._supertags.push(createSupertag(`notion-db`));
+        this._supertags.push(createSupertag(`notion-dblink`));
+        this._supertags.push(createSupertag(`notion-dbview`));
     }
 }
