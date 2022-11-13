@@ -34,7 +34,8 @@
     "jest": "^28.1.2",
     "marked": "^4.1.1",
     "prettier": "^2.7.1",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "url-join": "^5.0.0"
   },
   "eslintConfig": {
     "extends": [
@@ -75,8 +76,5 @@
     "testMatch": [
       "**/?(*.)+(test).[t]s?(x)"
     ]
-  },
-  "dependencies": {
-    "url-join": "^5.0.0"
   }
 }
