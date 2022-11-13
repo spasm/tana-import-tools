@@ -10,7 +10,7 @@ import path from "path";
 import {NotionMarkdownConverter} from "./markdown/NotionMarkdownConverter";
 import {
     createAttribute,
-    createField, createImageDescriptionField,
+    createImageDescriptionField,
     createNode,
     createSupertag,
     debugPrint,
@@ -18,9 +18,9 @@ import {
 } from "./utils";
 import {NotionDatabaseContext} from "./notion-core/NotionDatabaseContext";
 import {NotionMarkdownItem} from "./notion-core/NotionMarkdownItem";
-import {types} from "util";
 import os from "os";
 import urlJoin from "url-join";
+import Conf from "conf";
 
 export class NotionPathConverter {
 
@@ -31,7 +31,7 @@ export class NotionPathConverter {
     private _supertags = new Array<TanaIntermediateSupertag>();
 
     private _rootPath = "";
-    private _uploadPath = "https://spasm.github.io/tana-images/";
+    private _uploadPath = "https://no.host.set";
 
     private filesToSkip = ['.DS_Store'];
 
@@ -46,6 +46,7 @@ export class NotionPathConverter {
             supertags: this._supertags
         };
 
+        this.setImageUploadPath();
         this.initSupertags();
         this.initDefaultFields();
         this.walkPath(fullPath, tanaOutput.nodes);
@@ -315,5 +316,13 @@ export class NotionPathConverter {
         this._supertags.push(createSupertag(`notion-db`));
         this._supertags.push(createSupertag(`notion-dblink`));
         this._supertags.push(createSupertag(`notion-dbview`));
+    }
+
+    private setImageUploadPath(): void {
+        const url = new Conf().get(`imageUploadBaseUrl`) as string;
+        console.log(`Setting image host to: ${url}`);
+        if(url?.length > 0) {
+            this._uploadPath = url;
+        }
     }
 }

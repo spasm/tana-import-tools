@@ -18,6 +18,7 @@
     "convert:roam": "yarn build && node --experimental-modules --es-module-specifier-resolution=node dist/runner.js roam",
     "convert:workflowy": "yarn build && node --experimental-modules --es-module-specifier-resolution=node dist/runner.js workflowy",
     "convert:notion-path": "yarn build && node --experimental-modules --es-module-specifier-resolution=node dist/runner.js notion-path",
+    "settings": "yarn build && node --experimental-modules --es-module-specifier-resolution=node dist/config/config.js",
     "test": "jest"
   },
   "devDependencies": {
@@ -29,6 +30,7 @@
     "@types/node": "^18.0.3",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "conf": "^10.2.0",
     "csv-parse": "^5.3.1",
     "eslint": "^8.21.0",
     "jest": "^28.1.2",
