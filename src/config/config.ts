@@ -1,26 +1,24 @@
 import Conf from "conf";
+
+// Master properties list for now, will come up with a better arrangement later
 const properties = ['imageUploadBaseUrl'];
+//
 
 const configAction = process.argv[2];
 const configEntry = process.argv[3];
 const config = new Conf();
 
-function listConfig() {
-    console.log(`Listing all available properties:`);
-    properties.forEach(prop => console.log(`- ${prop} -`));
-}
-
 switch (configAction) {
     case 'set': {
-        setConfig();
+        setProp();
         break;
     }
     case 'get': {
-        getConfig();
+        getProp();
         break;
     }
     case 'list': {
-        listConfig();
+        listProps();
         break;
     }
     default: {
@@ -28,9 +26,12 @@ switch (configAction) {
     }
 }
 
-function setConfig() {
-    // accept an entry of property:value
+function listProps() {
+    console.log(`Listing all available properties:`);
+    properties.forEach(prop => console.log(`- ${prop} -`));
+}
 
+function setProp() {
     const configEntrySplit = configEntry.split('|');
     if(configEntrySplit?.length !== 2) { throw Error(`Config entry is in the wrong format.  Use "Property|Value"`); }
 
@@ -44,8 +45,7 @@ function setConfig() {
     console.log(`Property set!`);
 }
 
-// Is really just looking for the name of the property
- function getConfig() {
+ function getProp() {
     if(!isValidProperty(configEntry)) { throw Error(`Property ${configEntry} not valid.`); }
     if(!config.has(configEntry)) { console.log(`Property ${configEntry} not set.`); }
 
