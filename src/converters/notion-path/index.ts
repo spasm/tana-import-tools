@@ -66,6 +66,7 @@ export class NotionPathConverter {
             }
 
             const item = new NotionExportItem(path.join(dir, file), dbContext);
+            const pageSuperTagId = dbContext === undefined ? this.notionPageSupertagId : this.notionDbPageSupertagId;
 
             // Have we already processed this file via another branch? skip if so
             if(this.isTracking(item)){
@@ -78,6 +79,8 @@ export class NotionPathConverter {
                 if(!processedItem || !processedItem?.tanaNodeRef){
                     return;
                 }
+
+                processedItem.tanaNodeRef.supertags?.push(pageSuperTagId);
                 nodes.push(processedItem.tanaNodeRef);
                 this.track(item);
             }
@@ -102,6 +105,7 @@ export class NotionPathConverter {
                     // Contents for an inline/embedded database in a page
                     debugPrint("csv exists!" + item.fullPath);
                     const parentNode = createNode(item.name);
+                    parentNode.supertags?.push(this.notionDbSupertagId);
                     nodes.push(parentNode);
                     const csvItem = new NotionExportItem(item.fullPath + ".csv");
                     this.walkPath(item.fullPath, parentNode.children!, new NotionDatabaseContext(csvItem));
@@ -122,6 +126,9 @@ export class NotionPathConverter {
                         debugPrint("return early");
                         return;
                     }
+
+                    processedNextItem.tanaNodeRef.supertags?.push(pageSuperTagId);
+
                     nodes.push(processedNextItem.tanaNodeRef);
                     this.track(processedNextItem);
 
@@ -305,6 +312,18 @@ export class NotionPathConverter {
         return this._supertags.find(f => f.name === `image`)!.uid;
     }
 
+    private get notionPageSupertagId(): string {
+        return this._supertags.find(f => f.name === `notion-page`)!.uid;
+    }
+
+    private get notionDbSupertagId(): string {
+        return this._supertags.find(f => f.name === `notion-db`)!.uid;
+    }
+
+    private get notionDbPageSupertagId(): string {
+        return this._supertags.find(f => f.name === `notion-dbpage`)!.uid;
+    }
+
     private initDefaultFields() {
         this._attributes.push(createAttribute(`Image Description`));
     }
@@ -316,6 +335,7 @@ export class NotionPathConverter {
         this._supertags.push(createSupertag(`notion-db`));
         this._supertags.push(createSupertag(`notion-dblink`));
         this._supertags.push(createSupertag(`notion-dbview`));
+        this._supertags.push(createSupertag(`notion-dbpage`));
     }
 
     private setImageUploadPath(): void {
