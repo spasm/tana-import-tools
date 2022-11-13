@@ -1,4 +1,4 @@
-import {NodeType, TanaIntermediateAttribute, TanaIntermediateNode} from "../../types/types";
+import {NodeType, TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSupertag} from "../../types/types";
 import {idgenerator} from "../../utils/utils";
 import {marked} from "marked";
 import Token = marked.Token;
@@ -19,6 +19,12 @@ export function createField(name: string): TanaIntermediateNode {
     return createNodeOfType('field', name);
 }
 
+export function createImageDescriptionField(name: string) : TanaIntermediateNode {
+    const field = createField(`Image Description`);
+    field.children?.push(createNode(name));
+    return field;
+}
+
 export function createNodeOfType(type: NodeType, name: string): TanaIntermediateNode {
     return {
         name: name,
@@ -27,7 +33,8 @@ export function createNodeOfType(type: NodeType, name: string): TanaIntermediate
         type: type,
         uid: idgenerator(),
         children: [],
-        refs: []
+        refs: [],
+        supertags: []
     };
 }
 
@@ -37,6 +44,13 @@ export function createAttribute(name: string): TanaIntermediateAttribute {
         values: [],
         count: 1
     }
+}
+
+export function createSupertag(name: string): TanaIntermediateSupertag {
+    return {
+        name: name,
+        uid: idgenerator()
+    };
 }
 
 export function debugPrint(what: any): void {
@@ -52,4 +66,12 @@ export function debugPrintIf(token: Token, phrase: string): void {
         console.log(token);
         console.log("====== DEBUG ======")
     }
+}
+
+export function generateIdFromInternalImage(name: string): string {
+    const splitPath = name.split('/');
+    const imageName = splitPath[splitPath.length-1];
+    const parentName = splitPath[splitPath.length-2];
+    const id = parentName.substring(parentName.length - 32, parentName.length).trim();
+    return id + "-" + imageName;
 }

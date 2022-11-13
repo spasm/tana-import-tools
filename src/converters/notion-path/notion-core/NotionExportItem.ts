@@ -2,12 +2,14 @@ import path, {ParsedPath} from "path";
 import fs from "fs";
 import {TanaIntermediateNode} from "../../../types/types";
 import {NotionDatabaseContext} from "./NotionDatabaseContext";
+import {generateIdFromInternalImage} from "../utils";
 
 export enum ExportItemType {
     Unknown,
     Directory,
     Markdown,
-    CSV
+    CSV,
+    Image
 }
 
 export class NotionExportItem {
@@ -17,7 +19,7 @@ export class NotionExportItem {
     public readonly itemType: ExportItemType = ExportItemType.Unknown;
     public readonly id: string;
     public readonly name: string;
-    private readonly parsedPath: ParsedPath | undefined;
+    public readonly parsedPath: ParsedPath | undefined;
     public readonly fullPath: string;
     public readonly parentDatabase: NotionDatabaseContext | undefined;
 
@@ -34,17 +36,36 @@ export class NotionExportItem {
     // if it's a directory, suffix with '-d'
     private getNotionId(): string {
         const name = this.parsedPath!.name;
-        const id = name.substring(name.length - 32, name.length).trim();
-        return this.itemType == ExportItemType.Directory ? id + '-d' : id;
+        let returnId = "";
+
+        switch (this.itemType) {
+            case ExportItemType.Image: {
+                returnId = generateIdFromInternalImage(this.fullPath);
+                break;
+            }
+            case ExportItemType.Directory:
+            case ExportItemType.Markdown: {
+                const id = name.substring(name.length - 32, name.length).trim();
+                returnId = this.itemType == ExportItemType.Directory ? id + '-d' : id;
+                break;
+            }
+        }
+        return returnId;
     }
 
     private getItemName(): string {
         const name = this.parsedPath!.name;
+
+        // images don't have 32-digit ids
+        if(this.itemType === ExportItemType.Image) {
+            return name;
+        }
         return name.substring(0, name.length - 32).trim();
     }
 
     private getItemType(): ExportItemType {
         const stat = fs.statSync(this.fullPath!)
+        const imageMatch = /\.(gif|jpe?g|tiff?|png|webp|bmp)$/i;
 
         if (stat.isDirectory())
             {return ExportItemType.Directory;}
@@ -52,11 +73,13 @@ export class NotionExportItem {
         const ext = this.parsedPath?.ext;
 
         if (ext === ".md")
-            {return ExportItemType.Markdown;}
+            { return ExportItemType.Markdown; }
         else if (ext === ".csv")
-            {return ExportItemType.CSV;}
+            { return ExportItemType.CSV; }
+        else if (ext?.match(imageMatch))
+            { return ExportItemType.Image; }
         else
-            {return ExportItemType.Unknown;}
+            { return ExportItemType.Unknown; }
     }
 
     public getContents(): string | undefined {
@@ -70,6 +93,10 @@ export class NotionExportItem {
 
     public isDirectoryItem(): boolean {
         return this.itemType === ExportItemType.Directory;
+    }
+
+    public isImageItem(): boolean {
+        return this.itemType === ExportItemType.Image;
     }
 
     public isCsvItem(): boolean {
