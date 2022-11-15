@@ -1,8 +1,9 @@
 import Conf from "conf";
 
 // Master properties list for now, will come up with a better arrangement later
-const properties = ['imageUploadBaseUrl'];
-//
+/////////////////////////////////////////////
+const properties = ['imageUploadBaseUrl', 'debugLogging'];
+/////////////////////////////////////////////
 
 const configAction = process.argv[2];
 const configEntry = process.argv[3];

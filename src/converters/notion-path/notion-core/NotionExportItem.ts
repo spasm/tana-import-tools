@@ -30,6 +30,10 @@ export class NotionExportItem {
         this.itemType = this.getItemType();
         this.id = this.getNotionId();
         this.name = this.getItemName();
+
+        if(this.itemType === ExportItemType.CSV) {
+            this.parentDatabase = new NotionDatabaseContext(this);
+        }
     }
 
     // if it's a file, just return the id
@@ -44,6 +48,7 @@ export class NotionExportItem {
                 break;
             }
             case ExportItemType.Directory:
+            case ExportItemType.CSV:
             case ExportItemType.Markdown: {
                 const id = name.substring(name.length - 32, name.length).trim();
                 returnId = this.itemType == ExportItemType.Directory ? id + '-d' : id;

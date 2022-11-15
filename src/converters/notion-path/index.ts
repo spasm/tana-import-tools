@@ -24,8 +24,10 @@ import Conf from "conf";
 
 export class NotionPathConverter {
 
-    private tracking: Map<string, NotionExportItem> = new Map();
-    private summary: TanaIntermediateSummary = { brokenRefs: 0, calendarNodes: 0, fields: 0,
+    private _tracking: Map<string, NotionExportItem> = new Map();
+    private _dbTracking: Map<string, string | undefined> = new Map();
+
+    private _summary: TanaIntermediateSummary = { brokenRefs: 0, calendarNodes: 0, fields: 0,
         leafNodes: 0, topLevelNodes: 0, totalNodes: 0};
     private _attributes = new Array<TanaIntermediateAttribute>();
     private _supertags = new Array<TanaIntermediateSupertag>();
@@ -33,23 +35,27 @@ export class NotionPathConverter {
     private _rootPath = "";
     private _uploadPath = "https://no.host.set";
 
-    private filesToSkip = ['.DS_Store'];
+    private _filesToSkip = ['.DS_Store'];
 
     public convertPath(fullPath: string): TanaIntermediateFile | undefined{
         this._rootPath = fullPath;
 
         const tanaOutput: TanaIntermediateFile = {
             version: 'TanaIntermediateFile V0.1',
-            summary: this.summary,
+            summary: this._summary,
             nodes: [],
             attributes: this._attributes,
             supertags: this._supertags
         };
 
         this.setImageUploadPath();
-        this.initSupertags();
+        this.initDefaultSupertags();
         this.initDefaultFields();
+
         this.walkPath(fullPath, tanaOutput.nodes);
+
+        this._dbTracking.forEach((v, k) => console.log(`value: ${v}, key: ${k}`));
+
         this.performPostProcessing(tanaOutput);
         return tanaOutput;
     }
@@ -57,11 +63,9 @@ export class NotionPathConverter {
     private walkPath(dir: string, nodes: TanaIntermediateNode[],
                      dbContext: NotionDatabaseContext | undefined = undefined): void{
 
-        debugPrint("Entering Path: " + dir);
-
         const files = fs.readdirSync(dir);
         files.forEach(file => {
-            if(this.filesToSkip.includes(file)){
+            if(this._filesToSkip.includes(file)){
                 return;
             }
 
@@ -71,6 +75,16 @@ export class NotionPathConverter {
             // Have we already processed this file via another branch? skip if so
             if(this.isTracking(item)){
                 return;
+            }
+
+            /*
+                We assume that when it's a database reference and NOT a CSV based on an embedded
+                database view, that it's the original source.  However, if we hit a CSV file via
+                this entry point, it's most likely just a view.  We will keep a reference of it
+                to replace any associated links.
+             */
+            if(item?.isCsvItem()){
+                this._dbTracking.set(item.id, item.parentDatabase?.signature)
             }
 
             if(item?.isMarkdownItem()){
@@ -103,18 +117,18 @@ export class NotionPathConverter {
                 if(this.csvOfSameNameExists(item.fullPath)){
                     // This means that the directory that we've landed on is the directory of
                     // Contents for an inline/embedded database in a page
-                    debugPrint("csv exists!" + item.fullPath);
                     const parentNode = createNode(item.name);
                     parentNode.supertags?.push(this.notionDbSupertagId);
                     nodes.push(parentNode);
                     const csvItem = new NotionExportItem(item.fullPath + ".csv");
+                    csvItem.tanaNodeRef = parentNode;
+                    this.track(csvItem);
                     this.walkPath(item.fullPath, parentNode.children!, new NotionDatabaseContext(csvItem));
                     return;
                 }
 
                 // check for a markdown file of the same name
                 if(this.markdownOfSameNameExists(item.fullPath)){
-                    debugPrint("processing markdown early:" + item.fullPath)
                     // This means that the directory that we've landed on is the directory of
                     // contents for a page.  This might be images, this might be a database
                     // in the case of a database, once we go into this directory there's probably another
@@ -148,11 +162,11 @@ export class NotionPathConverter {
     }
 
     private isTracking(item: NotionExportItem): boolean {
-        return this.tracking.has(item.id);
+        return this._tracking.has(item.id);
     }
 
     private track(item: NotionExportItem): void {
-        this.tracking.set(item.id, item);
+        this._tracking.set(item.id, item);
     }
 
     private processMarkdownItem(item: NotionExportItem): NotionExportItem | undefined {
@@ -189,12 +203,12 @@ export class NotionPathConverter {
     }
 
     private mergeSummaryWith(origin: TanaIntermediateSummary): void {
-        this.summary.totalNodes += origin.totalNodes;
-        this.summary.fields += origin.fields;
-        this.summary.leafNodes += origin.leafNodes;
-        this.summary.topLevelNodes += origin.topLevelNodes;
-        this.summary.calendarNodes += origin.calendarNodes;
-        this.summary.brokenRefs += origin.brokenRefs;
+        this._summary.totalNodes += origin.totalNodes;
+        this._summary.fields += origin.fields;
+        this._summary.leafNodes += origin.leafNodes;
+        this._summary.topLevelNodes += origin.topLevelNodes;
+        this._summary.calendarNodes += origin.calendarNodes;
+        this._summary.brokenRefs += origin.brokenRefs;
     }
 
     private performPostProcessing(tanaOutput: TanaIntermediateFile): void {
@@ -237,6 +251,7 @@ export class NotionPathConverter {
         const mdLinkMatches = node.name.matchAll(mdLinkRegexGlobal);
 
         for (const mdLinkMatch of mdLinkMatches) {
+            console.log(`matches: ${JSON.stringify(mdLinkMatch)}`);
             const alias = mdLinkMatch?.at(1);
             const url = mdLinkMatch?.at(2);
             const extensionMatch = url?.match(internalExtRegex);
@@ -252,7 +267,7 @@ export class NotionPathConverter {
                     // we'll need to inspect the URL, split it and extract the id and name
                     // look up the image
                     const imageId = generateIdFromInternalImage(decodeURI(url));
-                    const notionItem = this.tracking.get(imageId);
+                    const notionItem = this._tracking.get(imageId);
                     if(notionItem) {
                         node.name = alias ?? url;
                         node.mediaUrl = urlJoin(this._uploadPath, encodeURI(notionItem.id));
@@ -274,13 +289,45 @@ export class NotionPathConverter {
             // process this like a normal internal file
             const totalLength = idLength + extensionMatch[0]?.length;
             const id = url.substring(url.length - totalLength, url.length - (totalLength - idLength));
-            const item = this.tracking.get(id);
+            console.log(`id: ${id}`);
+
+            let item = this._tracking.get(id);
+            console.log(`item name: ${item?.name}`);
+
+            if(!item && extensionMatch[0] === '.csv') {
+                console.log(`getting db id: ${id}`);
+                const dbSig = this._dbTracking.get(id);
+
+                if(dbSig) {
+                    console.log(`found db sig: ${dbSig}`);
+
+                    const found = new Array<NotionExportItem>();
+                    this._tracking.forEach((v) => {
+                        if(v.parentDatabase?.signature === dbSig && v.isCsvItem()) {
+                            console.log(`found db from signature: ${v.name}`)
+                            found.push(v);
+                        }
+                    })
+                    if(found?.length === 0) {
+                        console.error(`Couldn't find a source database to link to.`);
+                    }
+                    else if(found?.length > 1) {
+                        item = found[0];
+                        console.log(`Found more than 1 source database to link to, choosing the first: ${item.name}`);
+                    }
+                    else {
+                        item = found[0];
+                    }
+                }
+            }
 
             if(item) {
                 const uid = item.tanaNodeRef?.uid;
-                if(!uid){ return;}
 
+                if(!uid){ return;}
+                console.log(`node name before: ${node.name}`);
                 node.name = node.name.replace(mdLinkRegex, `[${alias}]([[${uid}]])`)
+                console.log(`node name after: ${node.name}`);
                 node.refs?.push(uid);
             }
         }
@@ -300,7 +347,7 @@ export class NotionPathConverter {
             const tempNodeRefs = new Array<string>;
             files.forEach(file => {
                 const id = file.substring(file.length - totalLength, file.length - 3);
-                const item = this.tracking.get(id);
+                const item = this._tracking.get(id);
                 if(item) {
                     const uid = item.tanaNodeRef?.uid;
                     if(!uid){ return;}
@@ -336,7 +383,7 @@ export class NotionPathConverter {
         this._attributes.push(createAttribute(`Image Description`));
     }
 
-    private initSupertags() {
+    private initDefaultSupertags() {
         this._supertags.push(createSupertag(`image`));
         this._supertags.push(createSupertag(`notion-page`));
         this._supertags.push(createSupertag(`notion-pagelink`));
