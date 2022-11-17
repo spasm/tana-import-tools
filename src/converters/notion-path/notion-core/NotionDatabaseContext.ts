@@ -12,6 +12,8 @@ export class NotionDatabaseContext {
     private _headerRow = new Array<string>;
     private _db = new Array<Array<string>>()
     private _dbSignature: string = "";
+    private _keepCached = false;
+    private _bufferLoaded = false;
 
     get headerRow(): Array<string> {
         return this._headerRow;
@@ -25,14 +27,22 @@ export class NotionDatabaseContext {
         return this._dbSignature;
     }
 
-    constructor(item: NotionExportItem) {
+    constructor(item: NotionExportItem, keepCached = true) {
         if(item.itemType !== ExportItemType.CSV){
             throw new Error("Must be a CSV");
         }
         this._item = item;
+        this._keepCached = keepCached;
+
         this.loadBuffer();
         this.generateSignature();
         console.log(`DB: ${this._item.name}, Hash: ${this._dbSignature}`);
+
+        // If we don't need to keep the buffer in memory, purge it
+        if(!this._keepCached) {
+            console.log(`CLEARING DB: ${this._item.name}`);
+            this._db = [];
+        }
     }
 
     private loadBuffer(): void {
@@ -43,6 +53,7 @@ export class NotionDatabaseContext {
             pass++;
             if(pass === 1) {
                 const trimmed = record.map(f => f.trim());
+                console.log(`HEADER ROW: ${JSON.stringify(trimmed)}`);
                 this._headerRow.push(...trimmed);
                 return;
             }
@@ -51,6 +62,9 @@ export class NotionDatabaseContext {
     }
 
     public getRowsByCellText(text: string): Array<Array<string>> {
+
+        console.log(`GET ROWS BY CELL TEXT: ${text}`);
+        console.log(`DATABASE: ${this._db.length}`);
 
         const resultingRows = new Array<Array<string>>();
         this._db.forEach(row => {
@@ -70,7 +84,7 @@ export class NotionDatabaseContext {
         in the workspace.
      */
     private generateSignature() {
-        const sortedHeaders = this.headerRow.sort();
+        const sortedHeaders = [...this.headerRow].sort();
         const headerCount = sortedHeaders.length;
         const headerBytes = sortedHeaders.join('|').length;
         const rowCount = this.data.length;
@@ -97,7 +111,7 @@ export class NotionDatabaseContext {
         // TODO:    a potential fix is to just look at those values, and if they appear to be .md references, don't use them
 
         const preHash = `${sortedHeaders}:${headerCount}:${headerBytes}:${rowCount}:${rowSig}`;
-        console.log(`Prehash: ${preHash}`);
+        //console.log(`Prehash: ${preHash}`);
 
         const hash = crypto.createHash('md5');
         hash.update(preHash);

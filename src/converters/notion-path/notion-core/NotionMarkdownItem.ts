@@ -58,6 +58,7 @@ export class NotionMarkdownItem extends NotionExportItem {
 
             // if we're in a body context, just continue to rebuild our content body
             if(inBodyContext) {
+                console.log(`in body`);
                 this._body += line + os.EOL;
                 return;
             }
@@ -69,6 +70,7 @@ export class NotionMarkdownItem extends NotionExportItem {
                 // now that we have our title, let's resolve related records
                 if(this.parentDatabase) {
                     relatedRecords = this.parentDatabase.getRowsByCellText(this._title);
+                    console.log(`RELATED RECORDS: ${JSON.stringify(relatedRecords)}`);
                 }
 
                 return;
@@ -79,12 +81,14 @@ export class NotionMarkdownItem extends NotionExportItem {
             const mdField = this.parseField(line);
 
             if(!mdField || !isDbField(mdField)) {
+                console.log(`not md field, not db field ${line}`);
                 this._body += line + os.EOL;
                 return;
             }
 
             // if we're on the third line, and it's not a field, then just collect the rest as body
             if(pass === 3 && !isDbField(mdField)) {
+                console.log(`pass 3 and not a field! ${mdField}`);
                 inBodyContext = true;
                 this._body += line + os.EOL;
                 return;
@@ -92,13 +96,16 @@ export class NotionMarkdownItem extends NotionExportItem {
 
             // Get our field from the database so that we can inspect it
             const dbField = this.enrichFieldFromRecords(mdField!, relatedRecords); // we won't get here if field is undefined
-
+            console.log(`After enrich: ${JSON.stringify(dbField)}`);
             // from here on forward, process as potential fields
             if(pass >= 3 && isDbField(mdField)) {
-
+                console.log(`pass 3 >=, is a db field! ${JSON.stringify(mdField)}`);
                 if(dbField) {
+                    console.log(`Splitting this field ${JSON.stringify(dbField)}`);
+
                     // do we have an enriched field?  let's refine further
                     const dbFieldSplit = dbField?.body.split(/\r\n|\r|\n/);
+                    console.log(`Field has length: ${dbFieldSplit.length}`);
                     // if we don't have any new line characters, just add to our fields
                     // and return.
                     if(dbFieldSplit?.length === 1){
@@ -178,9 +185,11 @@ export class NotionMarkdownItem extends NotionExportItem {
 
         records?.forEach(r => {
             const dbFieldBody = r[index];
+            console.log(`Comparing: dbFieldBody: ${dbFieldBody} to field.body: ${field.body}, Field: ${field.name}, Index: ${index}`);
             if(dbFieldBody === field.body) {
                 // return original body if all matches up
                 enrichedField = { name: field.name, body: field.body };
+                console.log(`Using Enriched field: ${JSON.stringify(enrichedField)}`);
                 return;
             }
 
@@ -195,6 +204,7 @@ export class NotionMarkdownItem extends NotionExportItem {
             }
         })
 
+        console.log(`Returning enriched field: ${enrichedField}`);
         return enrichedField;
     }
 }

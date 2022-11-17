@@ -78,8 +78,7 @@ export class NotionPathConverter {
             }
 
             /*
-                We assume that when it's a database reference and NOT a CSV based on an embedded
-                database view, that it's the original source.  However, if we hit a CSV file via
+                if we hit a CSV file via
                 this entry point, it's most likely just a view.  We will keep a reference of it
                 to replace any associated links.
              */
@@ -117,13 +116,14 @@ export class NotionPathConverter {
                 if(this.csvOfSameNameExists(item.fullPath)){
                     // This means that the directory that we've landed on is the directory of
                     // Contents for an inline/embedded database in a page
+                    // ** This means it's a SOURCE database, not a view/link! **
                     const parentNode = createNode(item.name);
                     parentNode.supertags?.push(this.notionDbSupertagId);
                     nodes.push(parentNode);
                     const csvItem = new NotionExportItem(item.fullPath + ".csv");
                     csvItem.tanaNodeRef = parentNode;
                     this.track(csvItem);
-                    this.walkPath(item.fullPath, parentNode.children!, new NotionDatabaseContext(csvItem));
+                    this.walkPath(item.fullPath, parentNode.children!, csvItem.parentDatabase);
                     return;
                 }
 
