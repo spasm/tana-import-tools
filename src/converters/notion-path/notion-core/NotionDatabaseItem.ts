@@ -1,17 +1,16 @@
-import {ExportItemType, NotionExportItem} from "./NotionExportItem";
+import { ExportItemType } from "./NotionExportItem";
+import { NotionExportItem } from "./NotionExportItem";
 import {parse} from "csv-parse/sync";
-import fs from "fs";
 import crypto from "crypto";
 import {debugPrint} from "../utils";
 
 export type NotionDbRecords = Array<Array<string>>;
 
-export class NotionDatabaseContext {
+export class NotionDatabaseItem extends NotionExportItem {
 
-    private _item: NotionExportItem;
     private _headerRow = new Array<string>;
     private _db = new Array<Array<string>>()
-    private _dbSignature: string = "";
+    private _dbSignature = "";
     private _keepCached = false;
     private _bufferLoaded = false;
 
@@ -28,26 +27,28 @@ export class NotionDatabaseContext {
     }
 
     constructor(item: NotionExportItem, keepCached = true) {
+        super(item.fullPath);
+
         if(item.itemType !== ExportItemType.CSV){
             throw new Error("Must be a CSV");
         }
-        this._item = item;
+
         this._keepCached = keepCached;
 
         this.loadBuffer();
         this.generateSignature();
-        console.log(`DB: ${this._item.name}, Hash: ${this._dbSignature}`);
+        console.log(`DB: ${this.name}, Hash: ${this._dbSignature}`);
 
         // If we don't need to keep the buffer in memory, purge it
         if(!this._keepCached) {
-            console.log(`CLEARING DB: ${this._item.name}`);
+            console.log(`CLEARING DB: ${this.name}`);
             this._db = [];
         }
     }
 
     private loadBuffer(): void {
         let pass = 0;
-        const file =fs.readFileSync(this._item.fullPath, 'utf-8');
+        const file = this.getContents() || '';
         const records = parse(file, {columns:false});
         records.forEach((record: Array<string>) => {
             pass++;

@@ -1,7 +1,6 @@
 import path, {ParsedPath} from "path";
 import fs from "fs";
 import {TanaIntermediateNode} from "../../../types/types";
-import {NotionDatabaseContext} from "./NotionDatabaseContext";
 import {generateIdFromInternalImage} from "../utils";
 
 export enum ExportItemType {
@@ -21,19 +20,13 @@ export class NotionExportItem {
     public readonly name: string;
     public readonly parsedPath: ParsedPath | undefined;
     public readonly fullPath: string;
-    public readonly parentDatabase: NotionDatabaseContext | undefined;
 
-    constructor(fullPath: string, parentDatabase: NotionDatabaseContext | undefined = undefined) {
+    constructor(fullPath: string) {
         this.parsedPath = path.parse(fullPath);
         this.fullPath = fullPath;
-        this.parentDatabase = parentDatabase;
         this.itemType = this.getItemType();
         this.id = this.getNotionId();
         this.name = this.getItemName();
-
-        if(this.itemType === ExportItemType.CSV) {
-            this.parentDatabase = new NotionDatabaseContext(this);
-        }
     }
 
     // if it's a file, just return the id
@@ -106,9 +99,5 @@ export class NotionExportItem {
 
     public isCsvItem(): boolean {
         return this.itemType === ExportItemType.CSV;
-    }
-
-    public hasParentDatabase(): boolean {
-        return this.parentDatabase !== undefined;
     }
 }

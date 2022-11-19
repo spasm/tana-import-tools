@@ -2,9 +2,10 @@ import {
     TanaIntermediateAttribute,
     TanaIntermediateFile,
     TanaIntermediateNode,
-    TanaIntermediateSummary, TanaIntermediateSupertag
+    TanaIntermediateSummary,
+    TanaIntermediateSupertag
 } from "../../types/types";
-import {ExportItemType, NotionExportItem} from "./notion-core/NotionExportItem";
+
 import fs from "fs";
 import path from "path";
 import {NotionMarkdownConverter} from "./markdown/NotionMarkdownConverter";
@@ -16,7 +17,8 @@ import {
     debugPrint,
     generateIdFromInternalImage
 } from "./utils";
-import {NotionDatabaseContext} from "./notion-core/NotionDatabaseContext";
+import {ExportItemType, NotionExportItem} from "./notion-core/NotionExportItem";
+import {NotionDatabaseItem} from "./notion-core/NotionDatabaseItem";
 import {NotionMarkdownItem} from "./notion-core/NotionMarkdownItem";
 import os from "os";
 import urlJoin from "url-join";
@@ -34,7 +36,6 @@ export class NotionPathConverter {
 
     private _rootPath = "";
     private _uploadPath = "https://no.host.set";
-
     private _filesToSkip = ['.DS_Store'];
 
     public convertPath(fullPath: string): TanaIntermediateFile | undefined{
@@ -61,7 +62,7 @@ export class NotionPathConverter {
     }
 
     private walkPath(dir: string, nodes: TanaIntermediateNode[],
-                     dbContext: NotionDatabaseContext | undefined = undefined): void{
+                     dbContext?: NotionDatabaseItem | undefined): void{
 
         const files = fs.readdirSync(dir);
         files.forEach(file => {
@@ -69,7 +70,7 @@ export class NotionPathConverter {
                 return;
             }
 
-            const item = new NotionExportItem(path.join(dir, file), dbContext);
+            const item = this.getResolvedItem(new NotionExportItem(path.join(dir, file)), dbContext);
             const pageSuperTagId = dbContext === undefined ? this.notionPageSupertagId : this.notionDbPageSupertagId;
 
             // Have we already processed this file via another branch? skip if so
@@ -82,11 +83,11 @@ export class NotionPathConverter {
                 this entry point, it's most likely just a view.  We will keep a reference of it
                 to replace any associated links.
              */
-            if(item?.isCsvItem()){
-                this._dbTracking.set(item.id, item.parentDatabase?.signature)
+            if(item instanceof NotionDatabaseItem) {
+                this._dbTracking.set(item.id, item.signature);
             }
 
-            if(item?.isMarkdownItem()){
+            if(item instanceof NotionMarkdownItem) {
                 const processedItem = this.processMarkdownItem(item);
 
                 if(!processedItem || !processedItem?.tanaNodeRef){
@@ -120,10 +121,10 @@ export class NotionPathConverter {
                     const parentNode = createNode(item.name);
                     parentNode.supertags?.push(this.notionDbSupertagId);
                     nodes.push(parentNode);
-                    const csvItem = new NotionExportItem(item.fullPath + ".csv");
+                    const csvItem = this.getResolvedItem(new NotionExportItem(item.fullPath + '.csv'), dbContext) as NotionDatabaseItem;
                     csvItem.tanaNodeRef = parentNode;
                     this.track(csvItem);
-                    this.walkPath(item.fullPath, parentNode.children!, csvItem.parentDatabase);
+                    this.walkPath(item.fullPath, parentNode.children!, csvItem);
                     return;
                 }
 
@@ -133,7 +134,7 @@ export class NotionPathConverter {
                     // contents for a page.  This might be images, this might be a database
                     // in the case of a database, once we go into this directory there's probably another
                     // directory, and a companion CSV for us to then inspect the database
-                    const nextItem = new NotionExportItem(item.fullPath + ".md", dbContext);
+                    const nextItem = this.getResolvedItem(new NotionExportItem(item.fullPath + '.md'), dbContext) as NotionMarkdownItem;
                     const processedNextItem = this.processMarkdownItem(nextItem);
 
                     if(!processedNextItem || !processedNextItem?.tanaNodeRef){
@@ -169,12 +170,11 @@ export class NotionPathConverter {
         this._tracking.set(item.id, item);
     }
 
-    private processMarkdownItem(item: NotionExportItem): NotionExportItem | undefined {
+    private processMarkdownItem(item: NotionMarkdownItem): NotionMarkdownItem | undefined {
         if(item.itemType !== ExportItemType.Markdown){
             return;
         }
-        const mdItem = new NotionMarkdownItem(item.fullPath, item.parentDatabase);
-        const converted = new NotionMarkdownConverter(mdItem).convert();
+        const converted = new NotionMarkdownConverter(item).convert();
         if(converted){
             const [node, summary, attributes] = converted;
             item.tanaNodeRef = node;
@@ -303,7 +303,7 @@ export class NotionPathConverter {
 
                     const found = new Array<NotionExportItem>();
                     this._tracking.forEach((v) => {
-                        if(v.parentDatabase?.signature === dbSig && v.isCsvItem()) {
+                        if(v instanceof NotionDatabaseItem && v.signature === dbSig) {
                             console.log(`found db from signature: ${v.name}`)
                             found.push(v);
                         }
@@ -398,6 +398,20 @@ export class NotionPathConverter {
         console.log(`Setting image host to: ${url}`);
         if(url?.length > 0) {
             this._uploadPath = url;
+        }
+    }
+
+    private getResolvedItem(item: NotionExportItem, dbContext?: NotionDatabaseItem): NotionExportItem {
+        switch(item.itemType) {
+            case ExportItemType.CSV: {
+                return new NotionDatabaseItem(item);
+
+            }
+            case ExportItemType.Markdown: {
+                return new NotionMarkdownItem(item, dbContext);
+            }
+            default:
+                return item;
         }
     }
 }
