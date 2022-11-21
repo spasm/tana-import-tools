@@ -11,6 +11,12 @@ export function createNode(name: string): TanaIntermediateNode {
     return createNodeOfType('node', name);
 }
 
+export function createTodo(name: string, isChecked: boolean): TanaIntermediateNode {
+    const node = createNode(name);
+    node.todoState = isChecked ? 'done' : 'todo';
+    return node;
+}
+
 export function createCodeBlock(name: string): TanaIntermediateNode {
     return createNodeOfType('codeblock', name);
 }

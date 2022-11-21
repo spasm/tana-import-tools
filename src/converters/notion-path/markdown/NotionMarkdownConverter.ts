@@ -34,7 +34,7 @@ export class NotionMarkdownConverter{
         this._context.rootNode = createNode(this._item.title);
         this.attachPageFields();
 
-        // debugPrint(JSON.stringify(tokens));
+        debugPrint(JSON.stringify(tokens));
 
         tokens.forEach( token => {
 
