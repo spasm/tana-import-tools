@@ -23,6 +23,7 @@ import {NotionMarkdownItem} from "./notion-core/NotionMarkdownItem";
 import os from "os";
 import urlJoin from "url-join";
 import Conf from "conf";
+import {RegExRegistry} from "./RegExRegistry";
 
 export class NotionPathConverter {
 
@@ -55,7 +56,9 @@ export class NotionPathConverter {
 
         this.walkPath(fullPath, tanaOutput.nodes);
 
+        console.log(`Listing all tracked items.  DB views: ${this._dbTracking.size}, items: ${this._tracking.size}`);
         this._dbTracking.forEach((v, k) => console.log(`value: ${v}, key: ${k}`));
+        this._tracking.forEach((v, k) => console.log(`value: ${v.tanaNodeRef?.uid}, key: ${k}`));
 
         this.performPostProcessing(tanaOutput);
         return tanaOutput;
@@ -217,11 +220,9 @@ export class NotionPathConverter {
             level++;
             nodes.forEach(node => {
 
+                console.log(`Fixing links for: ${node.name}`);
                 this.fixLinkReferences(node);
 
-                if(!nodeTypesToCount.includes(node.type)) {
-                    return;
-                }
                 if(level === 1 && node.type === 'node') {
                     tanaOutput.summary.topLevelNodes++;
                 }
@@ -240,24 +241,23 @@ export class NotionPathConverter {
     }
 
     private fixLinkReferences(node: TanaIntermediateNode): void {
-        const mdLinkRegex = /\[([^\]]+)\]\(([^\)\[]+)\)/;
-        const mdLinkRegexGlobal = /\[([^\]]+)\]\(([^\)]+)\)/g;
-        const internalExtRegex = /\.(gif|jpe?g|tiff?|png|webp|bmp|md|csv)$/i;
-        const httpRegex = /^https?:\/\//;
+        const regex = new RegExRegistry();
         const idLength = 32;
 
         // Matches the common MD link format -- e.g. []() or ![]()
         // Matches all instances of them, and then we iterate through them
-        const mdLinkMatches = node.name.matchAll(mdLinkRegexGlobal);
+        const mdLinkMatches = node.name.matchAll(regex.markdownLinksGlobal);
 
         for (const mdLinkMatch of mdLinkMatches) {
-            console.log(`matches: ${JSON.stringify(mdLinkMatch)}`);
+            console.log(`----------\nmatches: ${JSON.stringify(mdLinkMatch)}`);
             const alias = mdLinkMatch?.at(1);
             const url = mdLinkMatch?.at(2);
-            const extensionMatch = url?.match(internalExtRegex);
-            const httpMatch = url?.match(httpRegex);
+            const extensionMatch = url?.match(regex.internalExtensions);
+            const httpMatch = url?.match(regex.httpsUrl);
 
-            if(!extensionMatch || !url){ return; } // do nothing, leave the link as is
+            if(!extensionMatch || !url) {
+                return;
+            } // do nothing, leave the link as is
             // TODO: we should probably log something out, or capture something here
 
             if(node.name.startsWith('![')) {
@@ -309,7 +309,7 @@ export class NotionPathConverter {
                         }
                     })
                     if(found?.length === 0) {
-                        console.error(`Couldn't find a source database to link to.`);
+                        console.error(`Couldn't find a source database to link to. id:${id}, sig:${dbSig}`);
                     }
                     else if(found?.length > 1) {
                         item = found[0];
@@ -324,9 +324,13 @@ export class NotionPathConverter {
             if(item) {
                 const uid = item.tanaNodeRef?.uid;
 
-                if(!uid){ return;}
+                if(!uid) {
+                    console.error(`Found item, however no Tana UID for: ${item.name}, id: ${item.id}`);
+                    return;
+                }
+
                 console.log(`node name before: ${node.name}`);
-                node.name = node.name.replace(mdLinkRegex, `[${alias}]([[${uid}]])`)
+                node.name = node.name.replace(regex.markdownLinks, `[${alias}]([[${uid}]])`)
                 console.log(`node name after: ${node.name}`);
                 node.refs?.push(uid);
             }

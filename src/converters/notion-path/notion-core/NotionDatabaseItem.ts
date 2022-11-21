@@ -3,6 +3,7 @@ import { NotionExportItem } from "./NotionExportItem";
 import {parse} from "csv-parse/sync";
 import crypto from "crypto";
 import {debugPrint} from "../utils";
+import {RegExRegistry} from "../RegExRegistry";
 
 export type NotionDbRecords = Array<Array<string>>;
 
@@ -86,22 +87,42 @@ export class NotionDatabaseItem extends NotionExportItem {
      */
     private generateSignature() {
         const sortedHeaders = [...this.headerRow].sort();
+        const dbName = this.name;
         const headerCount = sortedHeaders.length;
         const headerBytes = sortedHeaders.join('|').length;
         const rowCount = this.data.length;
         let rowSig = 0;
 
+        const regex = new RegExRegistry();
+
         // get the 1st, 2nd, 3rd columns in sorted headers, which column is that in the regular headers?
         // this is the index that we'll use to compare
         [0,1,2].forEach(i => {
             let index = 0;
+            let tempRowSig = 0;
+            let columnDirty = false;
+
             const header = sortedHeaders.at(i);
 
             if(header) {
                 index = this.headerRow.indexOf(header);
                 this.data.forEach(r => {
-                    rowSig += r.at(index)?.length ?? 0;
+                    // if we've marked the column as dirty, that means we don't want
+                    // to consider any part of the rows in our signature.  exit early
+                    // TODO: rewrite this section so that we don't continue to loop through
+                    if(columnDirty) { return; }
+
+                    const row = r.at(index);
+                    // only count the row if there are no references to other files.
+                    // if these are relative paths, then it will skew our signature
+                    if (row?.match(regex.internalExtensions)) {
+                        columnDirty = true;
+                        return;
+                    }
+                    tempRowSig += r.at(index)?.length ?? 0;
                 });
+
+                rowSig = !columnDirty ? rowSig += tempRowSig : rowSig;
             }
         });
 
@@ -111,7 +132,7 @@ export class NotionDatabaseItem extends NotionExportItem {
         // TODO:    and that other page is elsewhere in the workspace, causing the relative link to be different
         // TODO:    a potential fix is to just look at those values, and if they appear to be .md references, don't use them
 
-        const preHash = `${sortedHeaders}:${headerCount}:${headerBytes}:${rowCount}:${rowSig}`;
+        const preHash = `${sortedHeaders}:${headerCount}:${headerBytes}:${rowCount}:${rowSig}:${dbName}`;
         //console.log(`Prehash: ${preHash}`);
 
         const hash = crypto.createHash('md5');
