@@ -11,8 +11,12 @@ import {HeadingTokenStrategy} from "./HeadingTokenStrategy";
 import {ParagraphTokenStrategy} from "./ParagraphTokenStrategy";
 import {CodeTokenStrategy} from "./CodeTokenStrategy";
 import {SpaceTokenStrategy} from "./SpaceTokenStrategy";
+import {NotionTask, TodoTokenStrategy} from "./TodoTokenStrategy";
+
+
 
 export class ListTokenStrategy extends BaseTokenStrategy {
+
     convert(): ConvertedNodeResponse {
 
         const tempNode: TanaIntermediateNode = {
@@ -38,12 +42,16 @@ export class ListTokenStrategy extends BaseTokenStrategy {
 
         token.items.forEach(t => {
             if (t.type == "list_item") {
-                this.addListItemToNode(node, t);
+                let task: NotionTask | undefined;
+                if(t.task) {
+                    task = { isTask: t.task, isTaskComplete: t.checked ?? false };
+                }
+                this.addListItemToNode(node, t, task);
             }
         });
     }
 
-    private addListItemToNode(node: TanaIntermediateNode, token: ListItem): void {
+    private addListItemToNode(node: TanaIntermediateNode, token: ListItem, task?: NotionTask): void {
 
         let currentNode: TanaIntermediateNode;
 
@@ -58,6 +66,13 @@ export class ListTokenStrategy extends BaseTokenStrategy {
                     return;
                 }
                 case "text": {
+                    // A notion _todo is actually a list-item with the task state, however we
+                    // process a list-item's child nodes and not the actual node itself.  therefore,
+                    // we're receiving the task state from the parent list-item
+                    if(task) {
+                        newNode = new TodoTokenStrategy(t, task).convert().firstNode();
+                        break;
+                    }
                     newNode = new TextTokenStrategy(t).convert().firstNode();
                     break;
                 }

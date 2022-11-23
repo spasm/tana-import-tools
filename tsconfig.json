@@ -11,7 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "lib": ["dom", "esnext"],
     "esModuleInterop": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "moduleResolution": "node",
 
     "types": ["node"],
