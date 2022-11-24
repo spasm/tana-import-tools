@@ -24,9 +24,11 @@ import os from "os";
 import urlJoin from "url-join";
 import Conf from "conf";
 import {RegExRegistry} from "./RegExRegistry";
+import {Logger, logging, LogLevel} from "./logging";
 
 export class NotionPathConverter {
 
+    private get _logger(): Logger { return logging.getLogger(this.constructor.name); }
     private _tracking: Map<string, NotionExportItem> = new Map();
     private _dbTracking: Map<string, string | undefined> = new Map();
 
@@ -38,6 +40,14 @@ export class NotionPathConverter {
     private _rootPath = "";
     private _uploadPath = "https://no.host.set";
     private _filesToSkip = ['.DS_Store'];
+
+    constructor() {
+        logging.configure({
+            minLevels: {
+                '': LogLevel.Debug
+            }
+        }).registerConsoleLogger();
+    }
 
     public convertPath(fullPath: string): TanaIntermediateFile | undefined{
         this._rootPath = fullPath;
