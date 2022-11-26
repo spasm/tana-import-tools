@@ -44,7 +44,7 @@ export class NotionPathConverter {
         logging.configure({
             minLevels: {
                 '': LogLevel.Info,
-                'NotionMarkdownConverter': LogLevel.Debug
+                'NotionMarkdownConverter': LogLevel.Info
             }
         }).registerConsoleLogger();
     }
