@@ -1,5 +1,5 @@
 // credit: https://adrianhall.github.io/cloud/2019/06/30/building-an-efficient-logger-in-typescript/
-// with some additional tweaks from jscott
+// with some additional tweaks from Jeff Scott 11/24/2022
 
 import { EventEmitter } from "events";
 
@@ -14,7 +14,7 @@ export class LogManager extends EventEmitter {
     private _consoleLoggerRegistered = false;
 
     public configure(options: LogOptions): LogManager {
-        this._options = options;
+        this._options = Object.assign({}, this._options, options);
         return this;
     }
 
@@ -80,6 +80,18 @@ export class Logger {
     private _logManager: EventEmitter;
     private _minLevel: LogLevel;
     private _module: string;
+
+    get minLogLevel(): LogLevel {
+        return this._minLevel;
+    }
+
+    get isTraceSet(): boolean {
+        return this._minLevel === LogLevel.Trace;
+    }
+
+    get isDebugSet(): boolean {
+        return this._minLevel === LogLevel.Debug;
+    }
 
     constructor(logManager: EventEmitter, module: string, minLevel: LogLevel) {
         this._logManager = logManager;

@@ -2,13 +2,13 @@ import { ExportItemType } from "./NotionExportItem";
 import { NotionExportItem } from "./NotionExportItem";
 import {parse} from "csv-parse/sync";
 import crypto from "crypto";
-import {debugPrint} from "../utils";
 import {RegExRegistry} from "../RegExRegistry";
+import {logging} from "../logging";
 
 export type NotionDbRecords = Array<Array<string>>;
 
 export class NotionDatabaseItem extends NotionExportItem {
-
+    private _logger = logging.getLogger(this.constructor.name);
     private _headerRow = new Array<string>;
     private _db = new Array<Array<string>>()
     private _dbSignature = "";
@@ -38,11 +38,10 @@ export class NotionDatabaseItem extends NotionExportItem {
 
         this.loadBuffer();
         this.generateSignature();
-        console.log(`DB: ${this.name}, Hash: ${this._dbSignature}`);
 
         // If we don't need to keep the buffer in memory, purge it
         if(!this._keepCached) {
-            console.log(`CLEARING DB: ${this.name}`);
+            this._logger.debug(`Clearing DB after load: ${this.name}`);
             this._db = [];
         }
     }
@@ -55,7 +54,6 @@ export class NotionDatabaseItem extends NotionExportItem {
             pass++;
             if(pass === 1) {
                 const trimmed = record.map(f => f.trim());
-                console.log(`HEADER ROW: ${JSON.stringify(trimmed)}`);
                 this._headerRow.push(...trimmed);
                 return;
             }
@@ -64,9 +62,6 @@ export class NotionDatabaseItem extends NotionExportItem {
     }
 
     public getRowsByCellText(text: string): Array<Array<string>> {
-
-        console.log(`GET ROWS BY CELL TEXT: ${text}`);
-        console.log(`DATABASE: ${this._db.length}`);
 
         const resultingRows = new Array<Array<string>>();
         this._db.forEach(row => {
@@ -133,10 +128,10 @@ export class NotionDatabaseItem extends NotionExportItem {
         // TODO:    a potential fix is to just look at those values, and if they appear to be .md references, don't use them
 
         const preHash = `${sortedHeaders}:${headerCount}:${headerBytes}:${rowCount}:${rowSig}:${dbName}`;
-        //console.log(`Prehash: ${preHash}`);
-
+        this._logger.debug(`Generating DB signature based on: ${preHash}`);
         const hash = crypto.createHash('md5');
         hash.update(preHash);
         this._dbSignature = hash.digest('hex');
+        this._logger.debug(`Generated DB signature: ${this._dbSignature}`);
     }
 }

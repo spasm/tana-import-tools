@@ -3,7 +3,6 @@ import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {TanaIntermediateNode} from "../../../types/types";
 import {TextTokenStrategy} from "./TextTokenStrategy";
 import {BlockQuoteTokenStrategy} from "./BlockQuoteTokenStrategy";
-import {debugPrint} from "../utils";
 import {marked} from "marked";
 import ListItem = marked.Tokens.ListItem;
 import List = marked.Tokens.List;
@@ -12,10 +11,16 @@ import {ParagraphTokenStrategy} from "./ParagraphTokenStrategy";
 import {CodeTokenStrategy} from "./CodeTokenStrategy";
 import {SpaceTokenStrategy} from "./SpaceTokenStrategy";
 import {NotionTask, TodoTokenStrategy} from "./TodoTokenStrategy";
+import {logging} from "../logging";
+import {createEmptyNode} from "../utils";
+import {HtmlTokenStrategy} from "./HtmlTokenStrategy";
+import {HrTokenStrategy} from "./HrTokenStrategy";
+import {TableTokenStrategy} from "./TableTokenStrategy";
 
 
 
 export class ListTokenStrategy extends BaseTokenStrategy {
+    private _logger = logging.getLogger(this.constructor.name);
 
     convert(): ConvertedNodeResponse {
 
@@ -53,7 +58,7 @@ export class ListTokenStrategy extends BaseTokenStrategy {
 
     private addListItemToNode(node: TanaIntermediateNode, token: ListItem, task?: NotionTask): void {
 
-        let currentNode: TanaIntermediateNode;
+        let currentNode: TanaIntermediateNode = node ?? createEmptyNode();
 
         token.tokens.forEach(t => {
 
@@ -96,8 +101,20 @@ export class ListTokenStrategy extends BaseTokenStrategy {
                     newNode = new SpaceTokenStrategy(t).convert().firstNode();
                     break;
                 }
+                case "html": {
+                    newNode = new HtmlTokenStrategy(t).convert().firstNode();
+                    break;
+                }
+                case "hr": {
+                    newNode = new HrTokenStrategy(t).convert().firstNode();
+                    break;
+                }
+                case "table": {
+                    newNode = new TableTokenStrategy(t).convert().firstNode();
+                    break;
+                }
                 default: {
-                    debugPrint(`Unknown type in ListTokenStrategy: ${t.type}, with content: ${t.raw}`);
+                    this._logger.error(`Unknown type in ListTokenStrategy: ${t.type}, with content: ${t.raw}`);
                 }
             }
             if(newNode) {

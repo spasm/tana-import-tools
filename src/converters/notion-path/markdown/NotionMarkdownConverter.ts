@@ -1,14 +1,15 @@
 import {TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSummary} from "../../../types/types";
 import {marked} from "marked";
-import {createAttribute, createEmptyNode, createField, createNode, debugPrint} from "../utils";
+import {createAttribute, createEmptyNode, createField, createNode} from "../utils";
 import {MarkdownTokenConverter} from "./MarkdownTokenConverter";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {ConverterContext} from "./ConverterContext";
 import Heading = marked.Tokens.Heading;
 import {NotionMarkdownItem} from "../notion-core/NotionMarkdownItem";
+import {logging} from "../logging";
 
 export class NotionMarkdownConverter{
-
+    private _logger = logging.getLogger(this.constructor.name);
     private _context = new ConverterContext();
     private _summary: TanaIntermediateSummary = {
         leafNodes: 0,
@@ -31,18 +32,30 @@ export class NotionMarkdownConverter{
         attributes: Array<TanaIntermediateAttribute>] | undefined {
 
         const tokens = marked.lexer(this._item.body);
+        this._logger.debug(`Markdown Tokens for ${this._item.name}: ${JSON.stringify(tokens, null, 2)}`);
+
         this._context.rootNode = createNode(this._item.title);
         this.attachPageFields();
-
-        debugPrint(JSON.stringify(tokens));
 
         tokens.forEach( token => {
 
             this._context.incrementPassCount();
-            const convertedNode = new MarkdownTokenConverter(token).getConverter()?.convert();
+            let convertedNode: ConvertedNodeResponse | undefined;
+
+            try {
+                convertedNode = new MarkdownTokenConverter(token).getConverter()?.convert();
+            }
+            catch (e) {
+                this._logger.error(`Error while processing: ${this._item.name}, id: ${this._item.id}, md: ${token.raw}`);
+                this._logger.error(`Error: ${(e as Error).stack}`)
+            }
+
             let targetNode = this._context.currentNode;
 
-            if(!convertedNode) { return; }
+            if(!convertedNode) {
+                this._logger.error(`No ConvertedNodeRespose for: ${this._item.name}, id: ${this._item.id}`);
+                return;
+            }
 
             // skip spaces
             if(convertedNode.token?.type === 'space') { return; }

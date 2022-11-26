@@ -1,5 +1,4 @@
 import {marked} from "marked";
-import {debugPrint} from "../utils";
 import {ITokenStrategy} from "./BaseTokenStrategy";
 import {SpaceTokenStrategy} from "./SpaceTokenStrategy";
 import {HeadingTokenStrategy} from "./HeadingTokenStrategy";
@@ -10,10 +9,13 @@ import {CodeTokenStrategy} from "./CodeTokenStrategy";
 import {TableTokenStrategy} from "./TableTokenStrategy";
 import {HrTokenStrategy} from "./HrTokenStrategy";
 import Token = marked.Token;
+import {logging} from "../logging";
+import {HtmlTokenStrategy} from "./HtmlTokenStrategy";
 
 
 export class MarkdownTokenConverter {
 
+    private _logger = logging.getLogger(this.constructor.name);
     private _converterStrategy: ITokenStrategy | undefined;
     private readonly _token: Token;
 
@@ -27,7 +29,6 @@ export class MarkdownTokenConverter {
             return;
         }
 
-        // debugPrint(`Choosing strategy for: ${this._token?.type}`);
         switch(this._token.type){
             case 'space':{
                 this._converterStrategy = new SpaceTokenStrategy(this._token);
@@ -61,8 +62,12 @@ export class MarkdownTokenConverter {
                 this._converterStrategy = new CodeTokenStrategy(this._token);
                 break;
             }
+            case 'html': {
+                this._converterStrategy = new HtmlTokenStrategy(this._token);
+                break;
+            }
             default: {
-                debugPrint(`Unknown Type in MarkdownTokenConverter: ${this._token.type}, with content: ${this._token.raw}`)
+                this._logger.error(`Unknown Type in MarkdownTokenConverter: ${this._token.type}, with content: ${this._token.raw}`);
                 // TODO: what do we want to do in this instance?
                 // Potentially put into the Audit node?
             }
