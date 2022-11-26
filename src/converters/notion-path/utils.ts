@@ -59,21 +59,6 @@ export function createSupertag(name: string): TanaIntermediateSupertag {
     };
 }
 
-export function debugPrint(what: any): void {
-    console.log("====== DEBUG ======");
-    console.log(what);
-    console.log("====== DEBUG ======")
-}
-
-export function debugPrintIf(token: Token, phrase: string): void {
-    const raw = token.raw;
-    if(raw.toLowerCase().indexOf(phrase.toLowerCase()) > 0){
-        console.log("====== DEBUG ======");
-        console.log(token);
-        console.log("====== DEBUG ======")
-    }
-}
-
 export function generateIdFromInternalImage(name: string): string {
     const splitPath = name.split('/');
     const imageName = splitPath[splitPath.length-1];

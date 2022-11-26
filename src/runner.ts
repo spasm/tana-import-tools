@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { RoamConverter } from './converters/roam/index';
 import { TanaIntermediateFile } from './types/types';
 import { WorkflowyConverter } from './converters/workflowy';
-import {NotionPathConverter} from "./converters/notion-path";
+import { NotionPathConverter } from "./converters/notion-path";
 
 const importType = process.argv[2];
 const source = process.argv[3];
