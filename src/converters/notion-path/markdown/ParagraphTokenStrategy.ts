@@ -1,9 +1,9 @@
 import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
-import {idgenerator} from "../../../utils/utils";
 import {marked} from "marked";
 import Paragraph = marked.Tokens.Paragraph;
 import {createNode} from "../utils";
+import {compose} from "./TextComposer";
 
 export class ParagraphTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
@@ -12,29 +12,9 @@ export class ParagraphTokenStrategy extends BaseTokenStrategy {
         const token = this._token as Paragraph;
 
         token?.tokens.forEach(t => {
-            switch (t.type) {
-                case 'text':
-                    para += t.text;
-                    return;
-                case 'em':
-                    para += `__${t.text}__`;
-                    return;
-                case 'strong':
-                    para += `**${t.text}**`;
-                    return;
-                case 'codespan':
-                    para += `\`${t.text}\``;
-                    return;
-                case 'link':
-                    para += `${t.raw}`;
-                    return;
-                default:
-                    para += `${t.raw}`;
-                    return;
-            }
+            para += compose(t);
         });
 
         return new ConvertedNodeResponse(createNode(para), this._token);
-
     }
 }
