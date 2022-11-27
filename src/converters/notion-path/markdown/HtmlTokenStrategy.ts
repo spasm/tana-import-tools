@@ -1,8 +1,9 @@
 import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {marked} from "marked";
-import HTML = marked.Tokens.HTML;
 import {createNode} from "../utils";
+
+type HTML = marked.Tokens.HTML;
 
 export class HtmlTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {

@@ -1,5 +1,6 @@
 import {marked} from "marked";
-import Token = marked.Token;
+
+type Token = marked.Token;
 
 export const compose = (t: Token): string => {
 

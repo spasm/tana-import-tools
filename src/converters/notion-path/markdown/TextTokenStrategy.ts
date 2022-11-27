@@ -1,10 +1,11 @@
 import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
-import Text = marked.Tokens.Text;
 import {marked} from "marked";
-import Token = marked.Token;
 import {createNode} from "../utils";
 import {compose} from "./TextComposer";
+
+type Text = marked.Tokens.Text;
+type Token = marked.Token;
 
 export class TextTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {
