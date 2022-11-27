@@ -18,3 +18,7 @@ export const genTokens = (md: string): TokensList => {
 export const getFixture = (file: string): string => {
     return fs.readFileSync(path.resolve(__dirname, `${fixturePath}/${file}`), 'utf-8');
 };
+
+export const log = (what: any): void => {
+    console.log(JSON.stringify(what, null, 2));
+}
