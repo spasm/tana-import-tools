@@ -4,8 +4,6 @@ import {TanaIntermediateNode} from "../../../types/types";
 import {TextTokenStrategy} from "./TextTokenStrategy";
 import {BlockQuoteTokenStrategy} from "./BlockQuoteTokenStrategy";
 import {marked} from "marked";
-import ListItem = marked.Tokens.ListItem;
-import List = marked.Tokens.List;
 import {HeadingTokenStrategy} from "./HeadingTokenStrategy";
 import {ParagraphTokenStrategy} from "./ParagraphTokenStrategy";
 import {CodeTokenStrategy} from "./CodeTokenStrategy";
@@ -17,7 +15,8 @@ import {HtmlTokenStrategy} from "./HtmlTokenStrategy";
 import {HrTokenStrategy} from "./HrTokenStrategy";
 import {TableTokenStrategy} from "./TableTokenStrategy";
 
-
+type ListItem = marked.Tokens.ListItem;
+type List = marked.Tokens.List;
 
 export class ListTokenStrategy extends BaseTokenStrategy {
     private _logger = logging.getLogger(this.constructor.name);

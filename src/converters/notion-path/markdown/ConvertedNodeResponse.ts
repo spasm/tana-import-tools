@@ -1,6 +1,9 @@
 import {TanaIntermediateNode} from "../../../types/types";
 import {marked} from "marked";
-import Token = marked.Token;
+
+type Token = marked.Token;
+
+//import Token = marked.Token;
 
 export class ConvertedNodeResponse {
 

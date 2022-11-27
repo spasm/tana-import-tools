@@ -1,9 +1,10 @@
 import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {marked} from "marked";
-import Paragraph = marked.Tokens.Paragraph;
 import {createNode} from "../utils";
 import {compose} from "./TextComposer";
+
+type Paragraph = marked.Tokens.Paragraph;
 
 export class ParagraphTokenStrategy extends BaseTokenStrategy {
     convert(): ConvertedNodeResponse {

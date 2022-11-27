@@ -1,10 +1,11 @@
 import {BaseTokenStrategy} from "./BaseTokenStrategy";
 import {marked} from "marked";
-import Text = marked.Tokens.Text;
-import Token = marked.Token;
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
 import {createTodo} from "../utils";
 import {compose} from "./TextComposer";
+
+type Text = marked.Tokens.Text;
+type Token = marked.Token;
 
 export type NotionTask = {
     isTask: boolean,

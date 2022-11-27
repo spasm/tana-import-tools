@@ -1,7 +1,6 @@
 import {NodeType, TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSupertag} from "../../types/types";
 import {idgenerator} from "../../utils/utils";
-import {marked} from "marked";
-import Token = marked.Token;
+
 
 export function createEmptyNode(): TanaIntermediateNode {
     return createNode("");
@@ -17,8 +16,10 @@ export function createTodo(name: string, isChecked: boolean): TanaIntermediateNo
     return node;
 }
 
-export function createCodeBlock(name: string): TanaIntermediateNode {
-    return createNodeOfType('codeblock', name);
+export function createCodeBlock(name: string, lang?: string): TanaIntermediateNode {
+    const node = createNodeOfType('codeblock', name);
+    node.codeLanguage = lang ?? 'unknown';
+    return node;
 }
 
 export function createField(name: string): TanaIntermediateNode {

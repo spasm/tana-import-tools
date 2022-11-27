@@ -1,6 +1,6 @@
 import {marked} from "marked";
-import Token = marked.Token;
 import {ConvertedNodeResponse} from "./ConvertedNodeResponse";
+type Token = marked.Token;
 
 export interface ITokenStrategy {
     convert(): ConvertedNodeResponse
