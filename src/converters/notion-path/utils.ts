@@ -85,11 +85,9 @@ export function generateIdFromInternalImage(name: string): string {
             const id = parentName.substring(parentName.length - notionIdLength, parentName.length).trim();
             return `${id}-${imageName}`;
         }
-
+        return `${parentName}-${imageName}`;
     } else {
         _logger.error(`Unable to generate image ID for ${name}`);
         return;
     }
-
-
 }
