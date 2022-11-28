@@ -88,6 +88,6 @@ export function generateIdFromInternalImage(name: string): string {
         return `${parentName}-${imageName}`;
     } else {
         _logger.error(`Unable to generate image ID for ${name}`);
-        return;
+        return name;
     }
 }
