@@ -279,6 +279,10 @@ export class NotionPathConverter {
                     // we'll need to inspect the URL, split it and extract the id and name
                     // look up the image
                     const imageId = generateIdFromInternalImage(decodeURI(url));
+                    // If the URL that we've extracted out of the MD file doesn't have a parent
+                    // folder, there's a good chance we're not going to find the original image to
+                    // properly link to.
+                    // TODO: Maybe think about a different way to generate and link up image IDs
                     const notionItem = this._tracking.get(imageId);
                     if(notionItem) {
                         node.name = alias ?? url;

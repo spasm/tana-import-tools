@@ -1,6 +1,9 @@
 import {NodeType, TanaIntermediateAttribute, TanaIntermediateNode, TanaIntermediateSupertag} from "../../types/types";
 import {idgenerator} from "../../utils/utils";
+import path from "path";
+import {logging} from "./logging";
 
+const _logger = logging.getLogger('Utils');
 
 export function createEmptyNode(): TanaIntermediateNode {
     return createNode("");
@@ -60,10 +63,33 @@ export function createSupertag(name: string): TanaIntermediateSupertag {
     };
 }
 
+/*
+    What we've seen here is images are usually exported into a directory
+    of the same name as the page they're in.  However, in the event the
+    image doesn't have a name, so it's exported as 'jpg' or '.jpg', then
+    it may be placed at the root and not have a parent directory structure.
+    In this event, there won't be any '/' to split on, as the image name will
+    most likely match the same name as the directory, or associated MD file.
+ */
 export function generateIdFromInternalImage(name: string): string {
-    const splitPath = name.split('/');
-    const imageName = splitPath[splitPath.length-1];
-    const parentName = splitPath[splitPath.length-2];
-    const id = parentName.substring(parentName.length - 32, parentName.length).trim();
-    return id + "-" + imageName;
+    const splitPath = name.split(path.sep);
+    const notionIdLength = 32;
+
+    if(splitPath.length === 1) {
+        return splitPath[0];
+    } else if(splitPath.length > 1) {
+        const imageName = splitPath[splitPath.length - 1];
+        const parentName = splitPath[splitPath.length - 2];
+
+        if(parentName.length > notionIdLength) {
+            const id = parentName.substring(parentName.length - notionIdLength, parentName.length).trim();
+            return `${id}-${imageName}`;
+        }
+
+    } else {
+        _logger.error(`Unable to generate image ID for ${name}`);
+        return;
+    }
+
+
 }
