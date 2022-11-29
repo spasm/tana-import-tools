@@ -140,9 +140,9 @@ export class NotionMarkdownItem extends NotionExportItem {
     }
 
     private parseField(line: string): NotionMarkdownField | undefined {
-        const field = line.substring(0, line.lastIndexOf(':'));
+        const field = line.substring(0, line.indexOf(':', 0));
         if(field) {
-            const fieldBody = line.substring(line.lastIndexOf(':') + 1, line.length)
+            const fieldBody = line.substring(line.indexOf(':', 0) + 1, line.length)
             return {
                 name: field.trim(),
                 body: fieldBody.trim()
