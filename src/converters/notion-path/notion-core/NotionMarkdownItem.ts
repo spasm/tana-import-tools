@@ -49,6 +49,7 @@ export class NotionMarkdownItem extends NotionExportItem {
 
         const isDbField = (field: NotionMarkdownField | undefined) => {
             if(!field){ return; }
+            this._logger.debug(`Scanning header row for ${field.name}`);
             return this._databaseContext?.headerRow.includes(field.name);
         }
 
@@ -141,7 +142,7 @@ export class NotionMarkdownItem extends NotionExportItem {
     private parseField(line: string): NotionMarkdownField | undefined {
         const field = line.substring(0, line.indexOf(':', 0));
         if(field) {
-            const fieldBody = line.substring(line.indexOf(':',0) + 1, line.length)
+            const fieldBody = line.substring(line.indexOf(':', 0) + 1, line.length)
             return {
                 name: field.trim(),
                 body: fieldBody.trim()

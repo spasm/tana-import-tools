@@ -49,7 +49,7 @@ export class NotionDatabaseItem extends NotionExportItem {
     private loadBuffer(): void {
         let pass = 0;
         const file = this.getContents() || '';
-        const records = parse(file, {columns:false});
+        const records = parse(file, { columns: false, bom: true });
         records.forEach((record: Array<string>) => {
             pass++;
             if(pass === 1) {
